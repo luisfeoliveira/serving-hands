@@ -26,6 +26,9 @@ export function QueueList({
 
   return (
     <div className="space-y-2">
+      <p className="text-xs text-muted-foreground tabular-nums">
+        {entries.length} {entries.length === 1 ? "pessoa" : "pessoas"} na fila
+      </p>
       {entries.map((entry) => (
         <QueueRow
           key={entry.id}

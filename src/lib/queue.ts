@@ -40,6 +40,34 @@ export async function getQueueEntries(
   });
 }
 
+// ─── Fetch completed/abandoned entries (history) ─────────────────────────────
+
+export async function getCompletedEntries(
+  eventId: string,
+  serviceType: ServiceType
+): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", serviceType)
+    .in("status", ["completed", "dispensed", "abandoned"])
+    .order("completed_at", { ascending: false })
+    .order("position", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row) => {
+    const { person, ...rest } = row as Record<string, unknown>;
+    return {
+      ...rest,
+      person: Array.isArray(person) ? person[0] : person,
+    } as QueueEntry;
+  });
+}
+
 // ─── Abandon a queue entry ────────────────────────────────────────────────────
 
 export async function abandonEntry(entryId: string): Promise<{ error?: string }> {

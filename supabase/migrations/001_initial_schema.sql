@@ -271,6 +271,12 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 CREATE POLICY "user reads own row" ON users
   FOR SELECT USING (id = auth.uid());
 
+-- ─── Realtime publication ────────────────────────────────────────────────────
+-- Tables created via raw SQL are NOT added automatically — must be explicit.
+
+ALTER PUBLICATION supabase_realtime ADD TABLE service_registrations;
+ALTER PUBLICATION supabase_realtime ADD TABLE people;
+
 -- ─── Seed: Create the IV Edition event ───────────────────────────────────────
 
 INSERT INTO events (name, date, location, active)

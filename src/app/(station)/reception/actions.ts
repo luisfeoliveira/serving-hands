@@ -190,6 +190,6 @@ async function insertServices(
     if (error) return { error: `Erro ao registrar ${service}: ${error.message}` };
   }
 
-  revalidatePath("/recepcao");
+  revalidatePath("/reception");
   return {};
 }

@@ -44,7 +44,7 @@ interface Props {
   initialQueueSizes: Record<string, number>;
 }
 
-export function RecepcaoClient({ eventId, initialQueueSizes }: Props) {
+export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 

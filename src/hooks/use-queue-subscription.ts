@@ -42,5 +42,5 @@ export function useQueueSubscription(
     };
   }, [eventId, serviceType, refresh]);
 
-  return { entries, isLoading: isPending };
+  return { entries, isLoading: isPending, refresh };
 }
