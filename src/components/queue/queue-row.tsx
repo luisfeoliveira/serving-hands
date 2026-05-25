@@ -1,6 +1,7 @@
 import { PriorityBadge } from "./priority-badge";
 import { StatusBadge } from "./status-badge";
 import { cn } from "@/lib/utils";
+import { SERVICE_LABELS } from "@/lib/types";
 import type { QueueEntry } from "@/lib/types";
 
 // Left border color communicates status at a glance
@@ -58,6 +59,12 @@ export function QueueRow({ entry, actions }: QueueRowProps) {
           {entry.chief_complaint && (
             <p className="text-sm text-muted-foreground line-clamp-2">
               {entry.chief_complaint}
+            </p>
+          )}
+          {!!entry.active_services?.length && (
+            <p className="text-xs text-amber-700 font-medium">
+              Em atendimento:{" "}
+              {entry.active_services.map((s) => SERVICE_LABELS[s]).join(" · ")}
             </p>
           )}
         </div>

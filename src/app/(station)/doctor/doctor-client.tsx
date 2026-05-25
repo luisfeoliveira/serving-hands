@@ -66,7 +66,7 @@ function CallButton({
 const REFERRAL_OPTIONS = [
   { value: "resolved" as const, label: "Resolvido" },
   { value: "sus" as const, label: "Encaminhar SUS" },
-  { value: "return" as const, label: "Retorno" },
+  { value: "other" as const, label: "Outro" },
 ];
 
 // ─── Active appointment card ──────────────────────────────────────────────────
@@ -79,7 +79,8 @@ function AppointmentCard({
   onSuccess: () => void;
 }) {
   const [notes, setNotes] = useState("");
-  const [referral, setReferral] = useState<"resolved" | "sus" | "return">("resolved");
+  const [referral, setReferral] = useState<"resolved" | "sus" | "other">("resolved");
+  const [referralNotes, setReferralNotes] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function submit() {
@@ -92,6 +93,7 @@ function AppointmentCard({
         entryId: entry.id,
         notes,
         referral,
+        ...(referral === "other" && { referral_notes: referralNotes }),
       });
       if (r.error) toast.error(r.error);
       else {
@@ -158,6 +160,15 @@ function AppointmentCard({
               </button>
             ))}
           </div>
+          {referral === "other" && (
+            <Textarea
+              value={referralNotes}
+              onChange={(e) => setReferralNotes(e.target.value)}
+              placeholder="Descreva o encaminhamento…"
+              rows={2}
+              className="text-sm resize-none"
+            />
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-1 border-t border-border/50">

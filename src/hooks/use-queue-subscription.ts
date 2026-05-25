@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition } from "react";
+import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getQueueEntries } from "@/lib/queue";
 import type { QueueEntry, ServiceType } from "@/lib/types";
@@ -12,6 +12,7 @@ export function useQueueSubscription(
 ) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(() => {
     startTransition(async () => {
@@ -21,23 +22,31 @@ export function useQueueSubscription(
   }, [eventId, serviceType]);
 
   useEffect(() => {
-    const supabase = createClient();
+    refresh();
 
+    const supabase = createClient();
     const channel = supabase
       .channel(`queue:${serviceType}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
-        () => refresh()
+        (payload) => {
+          const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
+          if (row?.event_id && row.event_id !== eventId) return;
+          if (row?.service_type && row.service_type !== serviceType) return;
+
+          if (debounceTimer.current) clearTimeout(debounceTimer.current);
+          debounceTimer.current = setTimeout(() => refresh(), 200);
+        }
       )
       .subscribe();
 
-    // Polling fallback — ensures consistency if realtime event is missed
     const interval = setInterval(refresh, 10_000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [eventId, serviceType, refresh]);
 

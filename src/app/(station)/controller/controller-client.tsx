@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -261,21 +261,36 @@ function AssignmentSection({
     });
   }, [eventId, serviceType, config.role, config.busyStatus]);
 
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    refresh();
+
     const supabase = createClient();
     const channel = supabase
       .channel(`ctrl:${serviceType}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
-        () => refresh()
+        (payload) => {
+          // Only refresh for rows relevant to this service type
+          const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
+          if (row?.event_id && row.event_id !== eventId) return;
+          if (row?.service_type && row.service_type !== serviceType) return;
+
+          // Debounce rapid successive events into a single refresh
+          if (debounceTimer.current) clearTimeout(debounceTimer.current);
+          debounceTimer.current = setTimeout(() => refresh(), 200);
+        }
       )
       .subscribe();
+
     const interval = setInterval(refresh, 10_000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [eventId, serviceType, refresh]);
 
@@ -442,7 +457,7 @@ export function ControllerClient({
       </TabsList>
 
       {serviceTypes.map((st) => (
-        <TabsContent key={st} value={st} className="mt-4">
+        <TabsContent key={st} value={st} className="mt-4 data-hidden:hidden" keepMounted>
           {renderService(st)}
         </TabsContent>
       ))}

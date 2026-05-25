@@ -92,7 +92,31 @@ export async function getControllerEntries(
     .order("position", { ascending: true });
 
   if (error || !data) return [];
-  return data.map(mapRow);
+  const entries = data.map(mapRow);
+
+  // Batch-fetch other active services for these persons
+  const personIds = entries.map((e) => e.person_id);
+  if (!personIds.length) return entries;
+
+  // Only statuses that mean they're actively being attended (not just waiting in queue)
+  const { data: others } = await admin
+    .from("service_registrations")
+    .select("person_id, service_type")
+    .eq("event_id", eventId)
+    .in("person_id", personIds)
+    .in("status", ["nursing_in_progress", "waiting_medico", "in_progress"])
+    .neq("service_type", serviceType);
+
+  const otherMap: Record<string, ServiceType[]> = {};
+  for (const row of others ?? []) {
+    if (!otherMap[row.person_id]) otherMap[row.person_id] = [];
+    otherMap[row.person_id].push(row.service_type as ServiceType);
+  }
+
+  return entries.map((e) => ({
+    ...e,
+    active_services: otherMap[e.person_id] ?? [],
+  }));
 }
 
 // ─── Professional roster with busy status ─────────────────────────────────────

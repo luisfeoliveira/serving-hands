@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { lookupPerson, registerPerson, addServices } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import { lookupPerson, registerPerson, addServices, getQueueSizes } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
 import type { ServiceType, DbPerson } from "@/lib/types";
 
@@ -46,6 +47,24 @@ interface Props {
 export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [queueSizes, setQueueSizes] = useState(initialQueueSizes);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const refresh = async () => {
+      const fresh = await getQueueSizes(eventId);
+      setQueueSizes(fresh);
+    };
+    const channel = supabase
+      .channel(`reception:sizes:${eventId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "service_registrations" }, refresh)
+      .subscribe();
+    const interval = setInterval(refresh, 10_000);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [eventId]);
 
   // CPF step
   const [cpf, setCpf] = useState("");
@@ -237,7 +256,7 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
                   mode === "existing" && registeredServices.includes(service);
                 const checked =
                   alreadyRegistered || selectedServices.includes(service);
-                const queueCount = initialQueueSizes[service] ?? 0;
+                const queueCount = queueSizes[service] ?? 0;
 
                 return (
                   <label

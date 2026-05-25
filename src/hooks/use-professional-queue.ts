@@ -2,34 +2,39 @@
 
 import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getDoctorEntries } from "@/lib/queue";
-import type { QueueEntry } from "@/lib/types";
+import { getProfessionalEntries } from "@/lib/queue";
+import type { QueueEntry, ServiceType } from "@/lib/types";
 
-export function useDoctorQueue(eventId: string, initialEntries: QueueEntry[]) {
+export function useProfessionalQueue(
+  eventId: string,
+  serviceType: ServiceType,
+  professionalId: string,
+  initialEntries: QueueEntry[]
+) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getDoctorEntries(eventId);
+      const fresh = await getProfessionalEntries(eventId, serviceType, professionalId);
       setEntries(fresh);
     });
-  }, [eventId]);
+  }, [eventId, serviceType, professionalId]);
 
   useEffect(() => {
     refresh();
 
     const supabase = createClient();
     const channel = supabase
-      .channel(`doctor:${eventId}`)
+      .channel(`professional:${professionalId}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
         (payload) => {
           const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
           if (row?.event_id && row.event_id !== eventId) return;
-          if (row?.service_type && row.service_type !== "medicina") return;
+          if (row?.service_type && row.service_type !== serviceType) return;
 
           if (debounceTimer.current) clearTimeout(debounceTimer.current);
           debounceTimer.current = setTimeout(() => refresh(), 200);
@@ -44,7 +49,7 @@ export function useDoctorQueue(eventId: string, initialEntries: QueueEntry[]) {
       clearInterval(interval);
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [eventId, refresh]);
+  }, [eventId, serviceType, professionalId, refresh]);
 
   return { entries, isLoading: isPending, refresh };
 }

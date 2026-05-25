@@ -30,7 +30,8 @@ export async function callPatient(entryId: string): Promise<{ error?: string }> 
 export async function completeAppointment(input: {
   entryId: string;
   notes: string;
-  referral: "resolved" | "sus" | "return";
+  referral: "resolved" | "sus" | "other";
+  referral_notes?: string;
 }): Promise<{ error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Não autenticado." };
@@ -39,7 +40,11 @@ export async function completeAppointment(input: {
 
   const { error: apptErr } = await admin.from("appointments").insert({
     service_registration_id: input.entryId,
-    data: { observacao: input.notes, referral: input.referral },
+    data: {
+      observacao: input.notes,
+      referral: input.referral,
+      ...(input.referral === "other" && { referral_notes: input.referral_notes ?? "" }),
+    },
     created_by: userId,
   });
   if (apptErr) return { error: apptErr.message };

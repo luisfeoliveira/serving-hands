@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition } from "react";
+import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfessionalEntries } from "@/lib/queue";
 import type { QueueEntry } from "@/lib/types";
@@ -12,6 +12,7 @@ export function useNursingQueue(
 ) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(() => {
     startTransition(async () => {
@@ -21,13 +22,21 @@ export function useNursingQueue(
   }, [eventId, nurseId]);
 
   useEffect(() => {
+    refresh();
+
     const supabase = createClient();
     const channel = supabase
       .channel(`nursing:${nurseId}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
-        () => refresh()
+        (payload) => {
+          const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
+          if (row?.event_id && row.event_id !== eventId) return;
+
+          if (debounceTimer.current) clearTimeout(debounceTimer.current);
+          debounceTimer.current = setTimeout(() => refresh(), 200);
+        }
       )
       .subscribe();
 
@@ -36,6 +45,7 @@ export function useNursingQueue(
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [eventId, nurseId, refresh]);
 

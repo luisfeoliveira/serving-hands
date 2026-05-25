@@ -152,12 +152,14 @@ export interface DbMedicalSpecialty {
 
 export type MedicinaData = {
   observacao: string;
-  referral: "resolved" | "sus" | "return";
+  referral: "resolved" | "sus" | "other";
+  referral_notes?: string;
 };
 
 export type ClinicalData = {
   chief_complaint: string;
-  referral: "resolved" | "sus" | "return";
+  referral: "resolved" | "sus" | "other";
+  referral_notes?: string;
 };
 
 export type ConsultoriaJuridicaData = {
