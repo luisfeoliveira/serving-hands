@@ -1,9 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-
 export function PriorityBadge() {
   return (
-    <Badge className="bg-accent text-accent-foreground text-xs px-1.5 py-0 rounded-sm">
-      Prioritário
-    </Badge>
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+      ⚑ Prioritário
+    </span>
   );
 }

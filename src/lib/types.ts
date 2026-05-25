@@ -100,6 +100,14 @@ export interface DbServiceRegistration {
   completed_at: string | null;
   started_by: string | null;
   completed_by: string | null;
+  assigned_to: string | null;
+}
+
+export interface ProfessionalStatus {
+  id: string;
+  name: string;
+  busy: boolean;
+  patientName?: string;
 }
 
 export interface DbHealthVitals {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,13 +9,20 @@ import { useQueueSubscription } from "@/hooks/use-queue-subscription";
 import { QueueList } from "@/components/queue/queue-list";
 import { QueueRow } from "@/components/queue/queue-row";
 import { AbandonButton } from "@/components/queue/abandon-button";
-import { getCompletedEntries } from "@/lib/queue";
-import { callEntry, completeEntry } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import {
+  getControllerEntries,
+  getProfessionalStatuses,
+  getCompletedEntries,
+} from "@/lib/queue";
+import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
+import { assignToProfessional, callEntry, completeEntry } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import type { ServiceType, QueueEntry } from "@/lib/types";
+import type { ServiceType, QueueEntry, ProfessionalStatus } from "@/lib/types";
+import { useEffect } from "react";
 
-// ─── Action buttons ───────────────────────────────────────────────────────────
+// ─── Generic action buttons ───────────────────────────────────────────────────
 
 function CallButton({
   entryId,
@@ -70,7 +77,7 @@ function CompleteButton({
   );
 }
 
-// ─── History section (load on demand) ────────────────────────────────────────
+// ─── History section ──────────────────────────────────────────────────────────
 
 function HistorySection({
   eventId,
@@ -88,7 +95,9 @@ function HistorySection({
     if (!loaded) {
       setOpen(true);
       startTransition(async () => {
-        const data = await getCompletedEntries(eventId, serviceType);
+        // For medicina: also show patients forwarded to doctor (still active there)
+        const extra = serviceType === "medicina" ? ["waiting_medico", "in_progress"] : [];
+        const data = await getCompletedEntries(eventId, serviceType, extra);
         setEntries(data);
         setLoaded(true);
       });
@@ -123,16 +132,14 @@ function HistorySection({
             </p>
           )}
           {!isPending &&
-            entries.map((entry) => (
-              <QueueRow key={entry.id} entry={entry} />
-            ))}
+            entries.map((entry) => <QueueRow key={entry.id} entry={entry} />)}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Single-service queue with realtime ──────────────────────────────────────
+// ─── Self-managed queue (cabelereiro, bazar) ──────────────────────────────────
 
 function ServiceQueue({
   eventId,
@@ -171,18 +178,215 @@ function ServiceQueue({
   );
 }
 
-// ─── Main client component ────────────────────────────────────────────────────
+// ─── Professional picker ──────────────────────────────────────────────────────
+
+function ProfessionalPicker({
+  professionals,
+  onSelect,
+  onCancel,
+}: {
+  professionals: ProfessionalStatus[];
+  onSelect: (id: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <div className="mt-1 rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Selecionar profissional
+      </p>
+      <div className="space-y-1.5">
+        {professionals.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => startTransition(() => onSelect(p.id))}
+            disabled={isPending}
+            className="w-full text-left rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50 flex items-center justify-between"
+          >
+            <span className="font-medium">{p.name}</span>
+            {p.busy ? (
+              <span className="text-xs text-amber-700 font-medium">
+                ● Atendendo {p.patientName}
+              </span>
+            ) : (
+              <span className="text-xs text-emerald-700 font-medium">
+                ● Disponível
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onCancel}
+        disabled={isPending}
+        className="h-7 text-xs"
+      >
+        Cancelar
+      </Button>
+    </div>
+  );
+}
+
+// ─── Assignment-based controller section ─────────────────────────────────────
+
+function AssignmentSection({
+  eventId,
+  serviceType,
+  initialQueue,
+  initialProfessionals,
+}: {
+  eventId: string;
+  serviceType: ServiceType;
+  initialQueue: QueueEntry[];
+  initialProfessionals: ProfessionalStatus[];
+}) {
+  const config = ASSIGNMENT_CONFIG[serviceType]!;
+  const [queue, setQueue] = useState(initialQueue);
+  const [professionals, setProfessionals] = useState(initialProfessionals);
+  const [callingEntryId, setCallingEntryId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [, startRefreshTransition] = useTransition();
+
+  const refresh = useCallback(() => {
+    startRefreshTransition(async () => {
+      const [freshQueue, freshProfessionals] = await Promise.all([
+        getControllerEntries(eventId, serviceType),
+        getProfessionalStatuses(eventId, config.role, config.busyStatus),
+      ]);
+      setQueue(freshQueue);
+      setProfessionals(freshProfessionals);
+    });
+  }, [eventId, serviceType, config.role, config.busyStatus]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`ctrl:${serviceType}:${eventId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_registrations" },
+        () => refresh()
+      )
+      .subscribe();
+    const interval = setInterval(refresh, 10_000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [eventId, serviceType, refresh]);
+
+  return (
+    <div className="space-y-6">
+      {/* Professional roster */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Profissionais · {professionals.length}
+        </p>
+        {professionals.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Nenhum profissional ativo cadastrado.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {professionals.map((p) => (
+              <div
+                key={p.id}
+                className={cn(
+                  "rounded-md border px-3 py-2",
+                  p.busy
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-emerald-300 bg-emerald-50"
+                )}
+              >
+                <p className="text-sm font-medium">{p.name}</p>
+                <p className={cn("text-xs font-medium", p.busy ? "text-amber-700" : "text-emerald-700")}>
+                  {p.busy ? `● Atendendo ${p.patientName}` : "● Disponível"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Waiting queue */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Aguardando · {queue.length}{" "}
+          {queue.length === 1 ? "pessoa" : "pessoas"}
+        </p>
+
+        {queue.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isPending ? "Atualizando…" : "Fila vazia."}
+            </p>
+          </div>
+        ) : (
+          queue.map((entry) => (
+            <div key={entry.id}>
+              <QueueRow
+                entry={entry}
+                actions={
+                  callingEntryId === entry.id ? undefined : (
+                    <>
+                      <AbandonButton entryId={entry.id} onAbandoned={refresh} />
+                      <Button
+                        size="sm"
+                        onClick={() => setCallingEntryId(entry.id)}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Chamar
+                      </Button>
+                    </>
+                  )
+                }
+              />
+              {callingEntryId === entry.id && (
+                <ProfessionalPicker
+                  professionals={professionals}
+                  onSelect={async (professionalId) => {
+                    const r = await assignToProfessional(
+                      entry.id,
+                      professionalId,
+                      config.targetStatus
+                    );
+                    if (r.error) toast.error(r.error);
+                    else {
+                      setCallingEntryId(null);
+                      refresh();
+                    }
+                  }}
+                  onCancel={() => setCallingEntryId(null)}
+                />
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <HistorySection eventId={eventId} serviceType={serviceType} />
+    </div>
+  );
+}
+
+// ─── Main client ──────────────────────────────────────────────────────────────
 
 interface Props {
   eventId: string;
   serviceTypes: ServiceType[];
   initialQueues: Record<string, QueueEntry[]>;
+  initialProfessionals: Record<string, ProfessionalStatus[]>;
 }
 
 export function ControllerClient({
   eventId,
   serviceTypes,
   initialQueues,
+  initialProfessionals,
 }: Props) {
   if (!serviceTypes.length) {
     return (
@@ -194,6 +398,27 @@ export function ControllerClient({
     );
   }
 
+  function renderService(st: ServiceType) {
+    const config = ASSIGNMENT_CONFIG[st];
+    if (config) {
+      return (
+        <AssignmentSection
+          eventId={eventId}
+          serviceType={st}
+          initialQueue={initialQueues[st] ?? []}
+          initialProfessionals={initialProfessionals[st] ?? []}
+        />
+      );
+    }
+    return (
+      <ServiceQueue
+        eventId={eventId}
+        serviceType={st}
+        initialEntries={initialQueues[st] ?? []}
+      />
+    );
+  }
+
   if (serviceTypes.length === 1) {
     const st = serviceTypes[0];
     return (
@@ -201,11 +426,7 @@ export function ControllerClient({
         <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           {SERVICE_LABELS[st]}
         </p>
-        <ServiceQueue
-          eventId={eventId}
-          serviceType={st}
-          initialEntries={initialQueues[st] ?? []}
-        />
+        {renderService(st)}
       </div>
     );
   }
@@ -222,11 +443,7 @@ export function ControllerClient({
 
       {serviceTypes.map((st) => (
         <TabsContent key={st} value={st} className="mt-4">
-          <ServiceQueue
-            eventId={eventId}
-            serviceType={st}
-            initialEntries={initialQueues[st] ?? []}
-          />
+          {renderService(st)}
         </TabsContent>
       ))}
     </Tabs>

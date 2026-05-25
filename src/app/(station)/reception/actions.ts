@@ -119,7 +119,6 @@ export async function registerPerson(input: {
   name: string;
   age: number;
   services: ServiceType[];
-  chiefComplaint: string;
   priority: boolean;
   eventId: string;
 }): Promise<{ error?: string }> {
@@ -151,7 +150,6 @@ export async function registerPerson(input: {
 export async function addServices(input: {
   personId: string;
   services: ServiceType[];
-  chiefComplaint: string;
   priority: boolean;
   eventId: string;
 }): Promise<{ error?: string }> {
@@ -168,7 +166,6 @@ async function insertServices(
   personId: string,
   input: {
     services: ServiceType[];
-    chiefComplaint: string;
     priority: boolean;
     eventId: string;
   }
@@ -181,7 +178,6 @@ async function insertServices(
       event_id: input.eventId,
       person_id: personId,
       service_type: service,
-      chief_complaint: service === "medicina" ? input.chiefComplaint || null : null,
       priority: input.priority,
       status,
       position,

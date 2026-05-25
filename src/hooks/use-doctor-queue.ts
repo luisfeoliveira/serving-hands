@@ -2,29 +2,24 @@
 
 import { useEffect, useState, useCallback, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getQueueEntries } from "@/lib/queue";
-import type { QueueEntry, ServiceType } from "@/lib/types";
+import { getDoctorEntries } from "@/lib/queue";
+import type { QueueEntry } from "@/lib/types";
 
-export function useQueueSubscription(
-  eventId: string,
-  serviceType: ServiceType,
-  initialEntries: QueueEntry[]
-) {
+export function useDoctorQueue(eventId: string, initialEntries: QueueEntry[]) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getQueueEntries(eventId, serviceType);
+      const fresh = await getDoctorEntries(eventId);
       setEntries(fresh);
     });
-  }, [eventId, serviceType]);
+  }, [eventId]);
 
   useEffect(() => {
     const supabase = createClient();
-
     const channel = supabase
-      .channel(`queue:${serviceType}:${eventId}`)
+      .channel(`doctor:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
@@ -32,14 +27,13 @@ export function useQueueSubscription(
       )
       .subscribe();
 
-    // Polling fallback — ensures consistency if realtime event is missed
     const interval = setInterval(refresh, 10_000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [eventId, serviceType, refresh]);
+  }, [eventId, refresh]);
 
   return { entries, isLoading: isPending, refresh };
 }

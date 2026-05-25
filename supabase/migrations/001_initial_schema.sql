@@ -277,6 +277,11 @@ CREATE POLICY "user reads own row" ON users
 ALTER PUBLICATION supabase_realtime ADD TABLE service_registrations;
 ALTER PUBLICATION supabase_realtime ADD TABLE people;
 
+-- REPLICA IDENTITY FULL required for column filters to work on UPDATE events.
+-- Without this, WAL only includes the PK on updates, so event_id filters are ignored.
+ALTER TABLE service_registrations REPLICA IDENTITY FULL;
+ALTER TABLE people REPLICA IDENTITY FULL;
+
 -- ─── Seed: Create the IV Edition event ───────────────────────────────────────
 
 INSERT INTO events (name, date, location, active)

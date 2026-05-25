@@ -2,7 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ServiceType, QueueEntry } from "@/lib/types";
+import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
+import type {
+  ServiceType,
+  QueueEntry,
+  DbHealthVitals,
+  ProfessionalStatus,
+  UserRole,
+} from "@/lib/types";
+
+// ─── Shared row mapper ────────────────────────────────────────────────────────
+
+function mapRow(row: Record<string, unknown>): QueueEntry {
+  const { person, ...rest } = row;
+  return {
+    ...rest,
+    person: Array.isArray(person) ? person[0] : person,
+  } as QueueEntry;
+}
 
 const ACTIVE_STATUSES = [
   "waiting",
@@ -12,14 +29,13 @@ const ACTIVE_STATUSES = [
   "in_progress",
 ] as const;
 
-// ─── Fetch active queue for a service ────────────────────────────────────────
+// ─── Generic active queue for a service ──────────────────────────────────────
 
 export async function getQueueEntries(
   eventId: string,
   serviceType: ServiceType
 ): Promise<QueueEntry[]> {
   const admin = createAdminClient();
-
   const { data, error } = await admin
     .from("service_registrations")
     .select("*, person:people(*)")
@@ -30,61 +46,175 @@ export async function getQueueEntries(
     .order("position", { ascending: true });
 
   if (error || !data) return [];
-
-  return data.map((row) => {
-    const { person, ...rest } = row as Record<string, unknown>;
-    return {
-      ...rest,
-      person: Array.isArray(person) ? person[0] : person,
-    } as QueueEntry;
-  });
+  return data.map(mapRow);
 }
 
-// ─── Fetch completed/abandoned entries (history) ─────────────────────────────
+// ─── Completed/abandoned entries (history) ────────────────────────────────────
 
 export async function getCompletedEntries(
   eventId: string,
-  serviceType: ServiceType
+  serviceType: ServiceType,
+  extraStatuses: string[] = []
 ): Promise<QueueEntry[]> {
   const admin = createAdminClient();
-
+  const statuses = ["completed", "dispensed", "abandoned", ...extraStatuses];
   const { data, error } = await admin
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
     .eq("service_type", serviceType)
-    .in("status", ["completed", "dispensed", "abandoned"])
+    .in("status", statuses)
     .order("completed_at", { ascending: false })
+    .order("nursing_completed_at", { ascending: false })
     .order("position", { ascending: false });
 
   if (error || !data) return [];
-
-  return data.map((row) => {
-    const { person, ...rest } = row as Record<string, unknown>;
-    return {
-      ...rest,
-      person: Array.isArray(person) ? person[0] : person,
-    } as QueueEntry;
-  });
+  return data.map(mapRow);
 }
 
-// ─── Abandon a queue entry ────────────────────────────────────────────────────
+// ─── Controller: waiting entries for a service ────────────────────────────────
+
+export async function getControllerEntries(
+  eventId: string,
+  serviceType: ServiceType
+): Promise<QueueEntry[]> {
+  const config = ASSIGNMENT_CONFIG[serviceType];
+  const waitingStatus = config?.waitingStatus ?? "waiting";
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", serviceType)
+    .eq("status", waitingStatus)
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
+// ─── Professional roster with busy status ─────────────────────────────────────
+
+export async function getProfessionalStatuses(
+  eventId: string,
+  role: UserRole,
+  busyStatus: string
+): Promise<ProfessionalStatus[]> {
+  const admin = createAdminClient();
+
+  const { data: professionals } = await admin
+    .from("users")
+    .select("id, name")
+    .eq("role", role)
+    .eq("active", true)
+    .order("name");
+
+  if (!professionals?.length) return [];
+
+  // Find who is currently busy (assigned + in busyStatus)
+  const { data: busy } = await admin
+    .from("service_registrations")
+    .select("assigned_to, person:people(name)")
+    .eq("event_id", eventId)
+    .eq("status", busyStatus)
+    .not("assigned_to", "is", null);
+
+  const busyMap: Record<string, string> = {};
+  for (const b of busy ?? []) {
+    const row = b as Record<string, unknown>;
+    const assignedTo = row.assigned_to as string;
+    const person = row.person;
+    const resolved = (Array.isArray(person) ? person[0] : person) as
+      | { name?: string }
+      | undefined;
+    if (assignedTo) busyMap[assignedTo] = resolved?.name ?? "?";
+  }
+
+  return professionals.map((p) => ({
+    id: p.id,
+    name: p.name,
+    busy: !!busyMap[p.id],
+    patientName: busyMap[p.id],
+  }));
+}
+
+// ─── Professional's own assigned entries ──────────────────────────────────────
+
+export async function getProfessionalEntries(
+  eventId: string,
+  serviceType: ServiceType,
+  professionalId: string
+): Promise<QueueEntry[]> {
+  const config = ASSIGNMENT_CONFIG[serviceType];
+  const busyStatus = config?.busyStatus ?? "in_progress";
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", serviceType)
+    .eq("status", busyStatus)
+    .eq("assigned_to", professionalId)
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
+// ─── Doctor queue (waiting_medico + in_progress) with vitals ──────────────────
+
+export async function getDoctorEntries(eventId: string): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", "medicina")
+    .in("status", ["waiting_medico", "in_progress"])
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  const entries = data.map(mapRow);
+
+  const ids = entries.map((e) => e.id);
+  if (!ids.length) return entries;
+
+  const { data: vitalsData } = await admin
+    .from("health_vitals")
+    .select("*")
+    .in("service_registration_id", ids)
+    .order("recorded_at", { ascending: false });
+
+  const vitalsMap: Record<string, DbHealthVitals> = {};
+  for (const v of vitalsData ?? []) {
+    if (!vitalsMap[v.service_registration_id]) {
+      vitalsMap[v.service_registration_id] = v as DbHealthVitals;
+    }
+  }
+
+  return entries.map((e) => ({ ...e, vitals: vitalsMap[e.id] }));
+}
+
+// ─── Abandon ──────────────────────────────────────────────────────────────────
 
 export async function abandonEntry(entryId: string): Promise<{ error?: string }> {
   const admin = createAdminClient();
-
   const { error } = await admin
     .from("service_registrations")
     .update({ status: "abandoned" })
     .eq("id", entryId);
 
   if (error) return { error: error.message };
-
   revalidatePath("/", "layout");
   return {};
 }
 
-// ─── Update entry status (used by station-specific actions) ──────────────────
+// ─── Generic status update ────────────────────────────────────────────────────
 
 export async function updateEntryStatus(
   entryId: string,
@@ -92,14 +222,12 @@ export async function updateEntryStatus(
   extra?: Record<string, unknown>
 ): Promise<{ error?: string }> {
   const admin = createAdminClient();
-
   const { error } = await admin
     .from("service_registrations")
     .update({ status, ...extra })
     .eq("id", entryId);
 
   if (error) return { error: error.message };
-
   revalidatePath("/", "layout");
   return {};
 }

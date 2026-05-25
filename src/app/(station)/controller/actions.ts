@@ -11,6 +11,16 @@ async function getCurrentUserId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
+export async function assignToProfessional(
+  entryId: string,
+  professionalId: string,
+  targetStatus: string
+): Promise<{ error?: string }> {
+  return updateEntryStatus(entryId, targetStatus, {
+    assigned_to: professionalId,
+  });
+}
+
 export async function callEntry(entryId: string): Promise<{ error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Não autenticado." };

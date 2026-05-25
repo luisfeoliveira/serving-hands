@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { lookupPerson, registerPerson, addServices } from "./actions";
@@ -60,10 +59,7 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
-  const [chiefComplaint, setChiefComplaint] = useState("");
   const [priority, setPriority] = useState(false);
-
-  const needsComplaint = selectedServices.includes("medicina");
 
   function handleSearch() {
     const clean = cpf.replace(/\D/g, "");
@@ -96,16 +92,11 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
     setSelectedServices((prev) =>
       prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]
     );
-    if (service === "medicina") setChiefComplaint("");
   }
 
   function handleSubmit() {
     if (!selectedServices.length) {
       toast.error("Selecione ao menos um serviço.");
-      return;
-    }
-    if (needsComplaint && !chiefComplaint.trim()) {
-      toast.error("Preencha a queixa/motivo para medicina.");
       return;
     }
 
@@ -124,7 +115,6 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
           name,
           age: ageNum,
           services: selectedServices,
-          chiefComplaint,
           priority,
           eventId,
         });
@@ -132,7 +122,6 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
         result = await addServices({
           personId: foundPerson!.id,
           services: selectedServices,
-          chiefComplaint,
           priority,
           eventId,
         });
@@ -158,7 +147,6 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
     setName("");
     setAge("");
     setSelectedServices([]);
-    setChiefComplaint("");
     setPriority(false);
   }
 
@@ -284,23 +272,6 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
               })}
             </div>
           </div>
-
-          {/* Chief complaint — medicina only */}
-          {needsComplaint && (
-            <div className="space-y-1.5">
-              <Label htmlFor="complaint">
-                Queixa / Motivo{" "}
-                <span className="text-muted-foreground font-normal">(Medicina)</span>
-              </Label>
-              <Textarea
-                id="complaint"
-                value={chiefComplaint}
-                onChange={(e) => setChiefComplaint(e.target.value)}
-                placeholder="Descreva a queixa principal do participante…"
-                rows={3}
-              />
-            </div>
-          )}
 
           {/* Priority */}
           <label className="flex items-center gap-3 cursor-pointer">
