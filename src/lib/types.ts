@@ -176,12 +176,21 @@ export type ConsultoriaFinanceiraData = {
 
 export type BelezaData = Record<string, never>;
 
+export type BazaarData = {
+  qty: number;
+  total: number;
+  method: "dinheiro" | "pix";
+  received?: number;
+  change?: number;
+};
+
 export type AppointmentData =
   | MedicinaData
   | ClinicalData
   | ConsultoriaJuridicaData
   | ConsultoriaFinanceiraData
-  | BelezaData;
+  | BelezaData
+  | BazaarData;
 
 // ─── Enriched queue row (used in UI) ─────────────────────────────────────────
 

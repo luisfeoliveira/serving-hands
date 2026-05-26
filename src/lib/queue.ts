@@ -254,6 +254,44 @@ export async function getDoctorEntries(eventId: string): Promise<QueueEntry[]> {
   return entries.map((e) => ({ ...e, vitals: vitalsMap[e.id] }));
 }
 
+// ─── Bazaar controller: waiting entries ──────────────────────────────────────
+
+export async function getBazaarWaitingEntries(
+  eventId: string
+): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", "bazar")
+    .eq("status", "waiting")
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
+// ─── Bazaar cashier: browsing (in_progress) entries ───────────────────────────
+
+export async function getBazaarBrowsingEntries(
+  eventId: string
+): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", "bazar")
+    .eq("status", "in_progress")
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
 // ─── Beauty professional: sobrancelha + estetica combined ────────────────────
 
 export async function getBeautyEntries(
