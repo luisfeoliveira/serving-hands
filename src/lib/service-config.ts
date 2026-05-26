@@ -17,7 +17,7 @@ export interface AssignmentConfig {
 
 /**
  * Services that use controller assignment.
- * Absent from map = self-managed (cabelereiro, bazar).
+ * Absent from map = self-managed (cabeleireiro, bazar).
  */
 export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> = {
   medicina: {
@@ -68,6 +68,12 @@ export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> =
     busyStatus: "in_progress",
     waitingStatus: "waiting",
   },
+  cabeleireiro: {
+    role: "beleza",
+    targetStatus: "in_progress",
+    busyStatus: "in_progress",
+    waitingStatus: "waiting",
+  },
   sobrancelha: {
     role: "beleza",
     targetStatus: "in_progress",
@@ -80,8 +86,7 @@ export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> =
     busyStatus: "in_progress",
     waitingStatus: "waiting",
   },
-  // cabelereiro — no assignment (self-managed queue)
-  // bazar       — no assignment (own flow)
+  // bazar — own flow
 };
 
 export function hasAssignment(serviceType: ServiceType): boolean {

@@ -254,6 +254,27 @@ export async function getDoctorEntries(eventId: string): Promise<QueueEntry[]> {
   return entries.map((e) => ({ ...e, vitals: vitalsMap[e.id] }));
 }
 
+// ─── Beauty professional: sobrancelha + estetica combined ────────────────────
+
+export async function getBeautyEntries(
+  eventId: string,
+  professionalId: string
+): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .in("service_type", ["cabeleireiro", "sobrancelha", "estetica"])
+    .eq("status", "in_progress")
+    .eq("assigned_to", professionalId)
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
 // ─── Abandon ──────────────────────────────────────────────────────────────────
 
 export async function abandonEntry(entryId: string): Promise<{ error?: string }> {

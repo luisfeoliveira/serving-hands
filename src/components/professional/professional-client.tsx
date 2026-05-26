@@ -193,6 +193,9 @@ function AppointmentForm({
       return <LegalForm form={form} set={set} onEvent={onEvent} />;
     case "consultoria_financeira":
       return <FinanceForm form={form} set={set} onEvent={onEvent} />;
+    case "sobrancelha":
+    case "estetica":
+      return null; // no form fields for beauty services
     default:
       return null;
   }
@@ -228,6 +231,9 @@ function buildAppointmentData(
         case_summary: form.case_summary ?? "",
       };
     }
+    case "sobrancelha":
+    case "estetica":
+      return {}; // BelezaData — no fields required
     default:
       return null;
   }

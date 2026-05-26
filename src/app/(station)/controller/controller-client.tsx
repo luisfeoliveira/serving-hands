@@ -139,7 +139,7 @@ function HistorySection({
   );
 }
 
-// ─── Self-managed queue (cabelereiro, bazar) ──────────────────────────────────
+// ─── Self-managed queue (cabeleireiro, bazar) ─────────────────────────────────
 
 function ServiceQueue({
   eventId,

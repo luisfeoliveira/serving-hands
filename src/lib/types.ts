@@ -26,7 +26,7 @@ export type ServiceType =
   | "servico_social"
   | "consultoria_juridica"
   | "consultoria_financeira"
-  | "cabelereiro"
+  | "cabeleireiro"
   | "sobrancelha"
   | "estetica"
   | "bazar";
@@ -39,7 +39,7 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   servico_social: "Serviço Social",
   consultoria_juridica: "Consultoria Jurídica",
   consultoria_financeira: "Consultoria Financeira",
-  cabelereiro: "Cabelereiro",
+  cabeleireiro: "Cabeleireiro",
   sobrancelha: "Design de Sobrancelha",
   estetica: "Estética",
   bazar: "Bazar",
