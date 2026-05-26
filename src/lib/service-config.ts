@@ -11,6 +11,8 @@ export interface AssignmentConfig {
   busyStatus: string;
   /** Status of entries waiting to be assigned */
   waitingStatus: string;
+  /** Optional second assignment phase (medicina: doctor after nursing) */
+  secondPhase?: Omit<AssignmentConfig, "secondPhase">;
 }
 
 /**
@@ -23,6 +25,12 @@ export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> =
     targetStatus: "nursing_in_progress",
     busyStatus: "nursing_in_progress",
     waitingStatus: "waiting_nursing",
+    secondPhase: {
+      role: "medico",
+      targetStatus: "in_progress",
+      busyStatus: "in_progress",
+      waitingStatus: "waiting_medico",
+    },
   },
   odontologia: {
     role: "odontologo",

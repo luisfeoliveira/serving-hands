@@ -73,6 +73,7 @@ export interface DbUser {
   role: UserRole;
   service_types: ServiceType[] | null;
   active: boolean;
+  medical_specialty: string | null;
 }
 
 export interface DbPerson {
@@ -108,6 +109,7 @@ export interface ProfessionalStatus {
   name: string;
   busy: boolean;
   patientName?: string;
+  specialty?: string | null;
 }
 
 export interface DbHealthVitals {

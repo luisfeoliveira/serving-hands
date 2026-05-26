@@ -9,7 +9,8 @@ export function useProfessionalQueue(
   eventId: string,
   serviceType: ServiceType,
   professionalId: string,
-  initialEntries: QueueEntry[]
+  initialEntries: QueueEntry[],
+  statusOverride?: string
 ) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
@@ -17,10 +18,10 @@ export function useProfessionalQueue(
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getProfessionalEntries(eventId, serviceType, professionalId);
+      const fresh = await getProfessionalEntries(eventId, serviceType, professionalId, statusOverride);
       setEntries(fresh);
     });
-  }, [eventId, serviceType, professionalId]);
+  }, [eventId, serviceType, professionalId, statusOverride]);
 
   useEffect(() => {
     refresh();

@@ -76,18 +76,26 @@ export async function getCompletedEntries(
 
 export async function getControllerEntries(
   eventId: string,
-  serviceType: ServiceType
+  serviceType: ServiceType,
+  waitingStatusOverride?: string,
+  medicalSpecialty?: string | null
 ): Promise<QueueEntry[]> {
   const config = ASSIGNMENT_CONFIG[serviceType];
-  const waitingStatus = config?.waitingStatus ?? "waiting";
+  const waitingStatus = waitingStatusOverride ?? config?.waitingStatus ?? "waiting";
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
     .eq("service_type", serviceType)
-    .eq("status", waitingStatus)
+    .eq("status", waitingStatus);
+
+  if (medicalSpecialty) {
+    query = query.eq("medical_specialty", medicalSpecialty);
+  }
+
+  const { data, error } = await query
     .order("priority", { ascending: false })
     .order("position", { ascending: true });
 
@@ -130,7 +138,7 @@ export async function getProfessionalStatuses(
 
   const { data: professionals } = await admin
     .from("users")
-    .select("id, name")
+    .select("id, name, medical_specialty")
     .eq("role", role)
     .eq("active", true)
     .order("name");
@@ -161,6 +169,7 @@ export async function getProfessionalStatuses(
     name: p.name,
     busy: !!busyMap[p.id],
     patientName: busyMap[p.id],
+    specialty: (p as Record<string, unknown>).medical_specialty as string | null ?? null,
   }));
 }
 
@@ -169,10 +178,11 @@ export async function getProfessionalStatuses(
 export async function getProfessionalEntries(
   eventId: string,
   serviceType: ServiceType,
-  professionalId: string
+  professionalId: string,
+  statusOverride?: string
 ): Promise<QueueEntry[]> {
   const config = ASSIGNMENT_CONFIG[serviceType];
-  const busyStatus = config?.busyStatus ?? "in_progress";
+  const busyStatus = statusOverride ?? config?.busyStatus ?? "in_progress";
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -186,7 +196,27 @@ export async function getProfessionalEntries(
     .order("position", { ascending: true });
 
   if (error || !data) return [];
-  return data.map(mapRow);
+  const entries = data.map(mapRow);
+
+  // For medicina: attach nursing vitals so doctor can see triage measurements
+  if (serviceType === "medicina" && entries.length > 0) {
+    const ids = entries.map((e) => e.id);
+    const { data: vitalsData } = await admin
+      .from("health_vitals")
+      .select("*")
+      .in("service_registration_id", ids)
+      .order("recorded_at", { ascending: false });
+
+    const vitalsMap: Record<string, DbHealthVitals> = {};
+    for (const v of vitalsData ?? []) {
+      if (!vitalsMap[v.service_registration_id]) {
+        vitalsMap[v.service_registration_id] = v as DbHealthVitals;
+      }
+    }
+    return entries.map((e) => ({ ...e, vitals: vitalsMap[e.id] }));
+  }
+
+  return entries;
 }
 
 // ─── Doctor queue (waiting_medico + in_progress) with vitals ──────────────────

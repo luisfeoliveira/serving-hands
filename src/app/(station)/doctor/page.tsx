@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { roleToPath } from "@/lib/roles";
 import { getActiveEvent } from "@/lib/event";
-import { getDoctorEntries } from "@/lib/queue";
+import { getProfessionalEntries } from "@/lib/queue";
 import { DoctorClient } from "./doctor-client";
 
 export default async function DoctorPage() {
@@ -21,7 +21,13 @@ export default async function DoctorPage() {
     );
   }
 
-  const initialEntries = await getDoctorEntries(event.id);
+  const initialEntries = await getProfessionalEntries(event.id, "medicina", profile.id, "in_progress");
 
-  return <DoctorClient eventId={event.id} initialEntries={initialEntries} />;
+  return (
+    <DoctorClient
+      eventId={event.id}
+      doctorId={profile.id}
+      initialEntries={initialEntries}
+    />
+  );
 }

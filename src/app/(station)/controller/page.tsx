@@ -28,35 +28,56 @@ export default async function ControllerPage() {
   }
 
   const serviceTypes = (profile.service_types ?? []) as ServiceType[];
+  // Controller's own specialty — determines which medicina phase they manage
+  const controllerSpecialty = profile.medical_specialty ?? null;
 
-  const [queues, professionalsMap] = await Promise.all([
-    Promise.all(
-      serviceTypes.map(async (st) => {
-        const config = ASSIGNMENT_CONFIG[st];
-        const entries = config
-          ? await getControllerEntries(event.id, st)
-          : await getQueueEntries(event.id, st);
-        return [st, entries] as [string, QueueEntry[]];
-      })
-    ).then(Object.fromEntries) as Promise<Record<string, QueueEntry[]>>,
-    Promise.all(
-      serviceTypes.map(async (st) => {
-        const config = ASSIGNMENT_CONFIG[st];
-        if (!config) return [st, []] as [string, ProfessionalStatus[]];
-        const statuses = await getProfessionalStatuses(
-          event.id,
-          config.role,
-          config.busyStatus
+  const queueTasks: Promise<[string, QueueEntry[]]>[] = [];
+  const professionalTasks: Promise<[string, ProfessionalStatus[]]>[] = [];
+
+  for (const st of serviceTypes) {
+    const config = ASSIGNMENT_CONFIG[st];
+    if (config) {
+      if (config.secondPhase && controllerSpecialty) {
+        // Specialty controller → only doctor assignment phase, filtered by specialty
+        const key = `${st}:2`;
+        queueTasks.push(
+          getControllerEntries(event.id, st, config.secondPhase.waitingStatus, controllerSpecialty).then((e) => [key, e])
         );
-        return [st, statuses] as [string, ProfessionalStatus[]];
-      })
-    ).then(Object.fromEntries) as Promise<Record<string, ProfessionalStatus[]>>,
+        professionalTasks.push(
+          getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus).then((s) => [key, s])
+        );
+      } else if (config.secondPhase && !controllerSpecialty) {
+        // Nursing controller → only first phase (nursing triage)
+        queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
+        professionalTasks.push(
+          getProfessionalStatuses(event.id, config.role, config.busyStatus).then((s) => [st, s])
+        );
+      } else {
+        // Single-phase service
+        queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
+        professionalTasks.push(
+          getProfessionalStatuses(event.id, config.role, config.busyStatus).then((s) => [st, s])
+        );
+      }
+    } else {
+      queueTasks.push(getQueueEntries(event.id, st).then((e) => [st, e]));
+      professionalTasks.push(Promise.resolve([st, []]));
+    }
+  }
+
+  const [queueEntries, professionalEntries] = await Promise.all([
+    Promise.all(queueTasks),
+    Promise.all(professionalTasks),
   ]);
+
+  const queues = Object.fromEntries(queueEntries) as Record<string, QueueEntry[]>;
+  const professionalsMap = Object.fromEntries(professionalEntries) as Record<string, ProfessionalStatus[]>;
 
   return (
     <ControllerClient
       eventId={event.id}
       serviceTypes={serviceTypes}
+      controllerSpecialty={controllerSpecialty}
       initialQueues={queues}
       initialProfessionals={professionalsMap}
     />

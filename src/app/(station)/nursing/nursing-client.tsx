@@ -9,8 +9,17 @@ import { Label } from "@/components/ui/label";
 import { useNursingQueue } from "@/hooks/use-nursing-queue";
 import { PriorityBadge } from "@/components/queue/priority-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
+import { startAttendance } from "@/lib/professional-actions";
 import { submitTriage } from "./actions";
+import { cn } from "@/lib/utils";
 import type { QueueEntry } from "@/lib/types";
+
+const SPECIALTY_OPTIONS = [
+  { value: "clinica_geral", label: "Clínica Geral" },
+  { value: "cardiologia", label: "Cardiologia" },
+  { value: "pneumologia", label: "Pneumologia" },
+  { value: "dermatologia", label: "Dermatologia" },
+];
 
 // ─── Vitals helpers ───────────────────────────────────────────────────────────
 
@@ -41,6 +50,7 @@ function TriageCard({
   entry: QueueEntry;
   onSuccess: () => void;
 }) {
+  const [started, setStarted] = useState(!!entry.started_at);
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [vitals, setVitals] = useState<VitalsState>({
     bp_systolic: "",
@@ -49,7 +59,16 @@ function TriageCard({
     weight: "",
     temperature: "",
   });
+  const [specialty, setSpecialty] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  function handleStart() {
+    startTransition(async () => {
+      const r = await startAttendance(entry.id);
+      if (r.error) toast.error(r.error);
+      else setStarted(true);
+    });
+  }
 
   const set =
     (field: keyof VitalsState) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -62,6 +81,7 @@ function TriageCard({
         chiefComplaint,
         vitals: parseVitals(vitals),
         action,
+        specialty: action === "forward" ? specialty || undefined : undefined,
       });
       if (r.error) {
         toast.error(r.error);
@@ -76,8 +96,45 @@ function TriageCard({
     });
   }
 
+  const patientHeader = (
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <span className="text-sm font-bold tabular-nums">{entry.position}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-foreground">{entry.person.name}</span>
+          <span className="text-sm text-muted-foreground">{entry.person.age} anos</span>
+          {entry.priority && <PriorityBadge />}
+        </div>
+        {entry.chief_complaint && (
+          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{entry.chief_complaint}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  if (!started) {
+    return (
+      <div className="rounded-lg border border-border border-l-4 border-l-amber-400 bg-background px-4 py-3 space-y-4">
+        {patientHeader}
+        <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
+          <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
+          <Button
+            size="sm"
+            onClick={handleStart}
+            disabled={isPending}
+            className="h-8 px-3 text-xs"
+          >
+            {isPending ? "…" : "Iniciar triagem"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border border-border bg-background px-4 py-3 space-y-3">
+    <div className="rounded-lg border border-border border-l-4 border-l-blue-400 bg-background px-4 py-3 space-y-3">
       {/* Patient info */}
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -195,6 +252,30 @@ function TriageCard({
               />
               <span className="text-xs text-muted-foreground shrink-0">°C</span>
             </div>
+          </div>
+        </div>
+
+        {/* Specialty picker */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Especialidade (encaminhamento)
+          </Label>
+          <div className="flex flex-wrap gap-1.5">
+            {SPECIALTY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSpecialty(specialty === opt.value ? "" : opt.value)}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-md border transition-colors",
+                  specialty === opt.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border hover:bg-muted/40 text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 

@@ -5,14 +5,21 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useDoctorQueue } from "@/hooks/use-doctor-queue";
-import { QueueRow } from "@/components/queue/queue-row";
+import { useProfessionalQueue } from "@/hooks/use-professional-queue";
 import { PriorityBadge } from "@/components/queue/priority-badge";
 import { StatusBadge } from "@/components/queue/status-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
-import { callPatient, completeAppointment } from "./actions";
+import { startAttendance } from "@/lib/professional-actions";
+import { completeAppointment } from "./actions";
 import { cn } from "@/lib/utils";
 import type { QueueEntry, DbHealthVitals } from "@/lib/types";
+
+const SPECIALTY_LABELS: Record<string, string> = {
+  clinica_geral: "Clínica Geral",
+  cardiologia: "Cardiologia",
+  pneumologia: "Pneumologia",
+  dermatologia: "Dermatologia",
+};
 
 // ─── Vitals summary strip ─────────────────────────────────────────────────────
 
@@ -33,34 +40,6 @@ function VitalsSummary({ vitals }: { vitals: DbHealthVitals }) {
   );
 }
 
-// ─── Call patient button ──────────────────────────────────────────────────────
-
-function CallButton({
-  entryId,
-  onSuccess,
-}: {
-  entryId: string;
-  onSuccess: () => void;
-}) {
-  const [isPending, startTransition] = useTransition();
-  return (
-    <Button
-      size="sm"
-      onClick={() =>
-        startTransition(async () => {
-          const r = await callPatient(entryId);
-          if (r.error) toast.error(r.error);
-          else onSuccess();
-        })
-      }
-      disabled={isPending}
-      className="h-8 px-3 text-xs"
-    >
-      {isPending ? "…" : "Chamar"}
-    </Button>
-  );
-}
-
 // ─── Referral options ─────────────────────────────────────────────────────────
 
 const REFERRAL_OPTIONS = [
@@ -69,7 +48,7 @@ const REFERRAL_OPTIONS = [
   { value: "other" as const, label: "Outro" },
 ];
 
-// ─── Active appointment card ──────────────────────────────────────────────────
+// ─── Appointment card ─────────────────────────────────────────────────────────
 
 function AppointmentCard({
   entry,
@@ -78,11 +57,64 @@ function AppointmentCard({
   entry: QueueEntry;
   onSuccess: () => void;
 }) {
+  const [started, setStarted] = useState(!!entry.started_at);
   const [notes, setNotes] = useState("");
   const [referral, setReferral] = useState<"resolved" | "sus" | "other">("resolved");
   const [referralNotes, setReferralNotes] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  const patientHeader = (
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <span className="text-sm font-bold tabular-nums">{entry.position}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-foreground">{entry.person.name}</span>
+          <span className="text-sm text-muted-foreground">{entry.person.age} anos</span>
+          {entry.priority && <PriorityBadge />}
+        </div>
+        {entry.medical_specialty && (
+          <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+            {SPECIALTY_LABELS[entry.medical_specialty] ?? entry.medical_specialty}
+          </span>
+        )}
+        {entry.chief_complaint && (
+          <p className="text-sm text-muted-foreground mt-0.5">{entry.chief_complaint}</p>
+        )}
+        {entry.vitals && <VitalsSummary vitals={entry.vitals} />}
+      </div>
+      <StatusBadge status={entry.status} />
+    </div>
+  );
+
+  // ── Not yet started ───────────────────────────────────────────────────────
+  if (!started) {
+    return (
+      <div className="rounded-lg border border-border border-l-4 border-l-amber-400 bg-background px-4 py-3 space-y-4">
+        {patientHeader}
+        <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
+          <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
+          <Button
+            size="sm"
+            onClick={() =>
+              startTransition(async () => {
+                const r = await startAttendance(entry.id);
+                if (r.error) toast.error(r.error);
+                else setStarted(true);
+              })
+            }
+            disabled={isPending}
+            className="h-8 px-3 text-xs"
+          >
+            {isPending ? "…" : "Iniciar atendimento"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── In progress ───────────────────────────────────────────────────────────
   function submit() {
     if (!notes.trim()) {
       toast.error("Preencha as observações.");
@@ -104,27 +136,9 @@ function AppointmentCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background px-4 py-3 space-y-3">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-          <span className="text-sm font-bold tabular-nums">{entry.position}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-foreground">{entry.person.name}</span>
-            <span className="text-sm text-muted-foreground">{entry.person.age} anos</span>
-            {entry.priority && <PriorityBadge />}
-          </div>
-          {entry.chief_complaint && (
-            <p className="text-sm text-muted-foreground mt-0.5">{entry.chief_complaint}</p>
-          )}
-          {entry.vitals && <VitalsSummary vitals={entry.vitals} />}
-        </div>
-        <StatusBadge status={entry.status} />
-      </div>
+    <div className="rounded-lg border border-border border-l-4 border-l-emerald-500 bg-background px-4 py-3 space-y-3">
+      {patientHeader}
 
-      {/* Appointment form */}
       <div className="border-t border-border/50 pt-3 space-y-3">
         <div className="space-y-1.5">
           <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -187,90 +201,39 @@ function AppointmentCard({
   );
 }
 
-// ─── Waiting row (waiting_medico) — shows vitals if available ─────────────────
-
-function WaitingRow({
-  entry,
-  onSuccess,
-}: {
-  entry: QueueEntry;
-  onSuccess: () => void;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-background px-4 py-3 space-y-2">
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-sm font-bold tabular-nums">{entry.position}</span>
-        </div>
-        <div className="flex-1 min-w-0 space-y-0.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-foreground">{entry.person.name}</span>
-            <span className="text-sm text-muted-foreground">{entry.person.age} anos</span>
-            {entry.priority && <PriorityBadge />}
-          </div>
-          {entry.chief_complaint && (
-            <p className="text-sm text-muted-foreground line-clamp-1">
-              {entry.chief_complaint}
-            </p>
-          )}
-          {entry.vitals && <VitalsSummary vitals={entry.vitals} />}
-        </div>
-        <StatusBadge status={entry.status} />
-      </div>
-      <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
-        <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
-        <CallButton entryId={entry.id} onSuccess={onSuccess} />
-      </div>
-    </div>
-  );
-}
-
 // ─── Main client ──────────────────────────────────────────────────────────────
 
 interface Props {
   eventId: string;
+  doctorId: string;
   initialEntries: QueueEntry[];
 }
 
-export function DoctorClient({ eventId, initialEntries }: Props) {
-  const { entries, isLoading, refresh } = useDoctorQueue(eventId, initialEntries);
+export function DoctorClient({ eventId, doctorId, initialEntries }: Props) {
+  const { entries, refresh } = useProfessionalQueue(
+    eventId,
+    "medicina",
+    doctorId,
+    initialEntries,
+    "in_progress"
+  );
 
-  const active = entries.filter((e) => e.status === "in_progress");
-  const waiting = entries.filter((e) => e.status === "waiting_medico");
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
+        <p className="text-sm font-medium text-foreground">Disponível</p>
+        <p className="text-sm text-muted-foreground">
+          Aguardando atribuição do controlador.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* In appointment now */}
-      {active.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Em atendimento
-          </p>
-          {active.map((e) => (
-            <AppointmentCard key={e.id} entry={e} onSuccess={refresh} />
-          ))}
-        </div>
-      )}
-
-      {/* Waiting for doctor */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Aguardando médico · {waiting.length}{" "}
-          {waiting.length === 1 ? "pessoa" : "pessoas"}
-        </p>
-
-        {waiting.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              {isLoading ? "Carregando…" : "Nenhum paciente aguardando."}
-            </p>
-          </div>
-        ) : (
-          waiting.map((e) => (
-            <WaitingRow key={e.id} entry={e} onSuccess={refresh} />
-          ))
-        )}
-      </div>
+    <div className="space-y-3">
+      {entries.map((e) => (
+        <AppointmentCard key={e.id} entry={e} onSuccess={refresh} />
+      ))}
     </div>
   );
 }

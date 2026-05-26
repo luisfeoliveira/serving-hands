@@ -15,7 +15,7 @@ import {
   getProfessionalStatuses,
   getCompletedEntries,
 } from "@/lib/queue";
-import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
+import { ASSIGNMENT_CONFIG, type AssignmentConfig } from "@/lib/service-config";
 import { assignToProfessional, callEntry, completeEntry } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -180,37 +180,72 @@ function ServiceQueue({
 
 // ─── Professional picker ──────────────────────────────────────────────────────
 
+const SPECIALTY_LABELS: Record<string, string> = {
+  clinica_geral: "Clínica Geral",
+  cardiologia: "Cardiologia",
+  pneumologia: "Pneumologia",
+  dermatologia: "Dermatologia",
+};
+
 function ProfessionalPicker({
   professionals,
+  patientSpecialty,
   onSelect,
   onCancel,
 }: {
   professionals: ProfessionalStatus[];
+  patientSpecialty?: string | null;
   onSelect: (id: string) => Promise<void>;
   onCancel: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
+  // For medicina: filter to matching specialty; fall back to all if none match
+  const filtered = patientSpecialty
+    ? professionals.filter((p) => !p.specialty || p.specialty === patientSpecialty)
+    : professionals;
+  const list = filtered.length > 0 ? filtered : professionals;
+  const noMatch = patientSpecialty && filtered.length === 0;
+
   return (
     <div className="mt-1 rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Selecionar profissional
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Selecionar profissional
+        </p>
+        {patientSpecialty && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 font-medium">
+            {SPECIALTY_LABELS[patientSpecialty] ?? patientSpecialty}
+          </span>
+        )}
+      </div>
+      {noMatch && (
+        <p className="text-xs text-amber-700">
+          Nenhum médico com esta especialidade — mostrando todos.
+        </p>
+      )}
       <div className="space-y-1.5">
-        {professionals.map((p) => (
+        {list.map((p) => (
           <button
             key={p.id}
             onClick={() => startTransition(() => onSelect(p.id))}
             disabled={isPending}
-            className="w-full text-left rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50 flex items-center justify-between"
+            className="w-full text-left rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50 flex items-center justify-between gap-2"
           >
-            <span className="font-medium">{p.name}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-medium truncate">{p.name}</span>
+              {p.specialty && (
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {SPECIALTY_LABELS[p.specialty] ?? p.specialty}
+                </span>
+              )}
+            </div>
             {p.busy ? (
-              <span className="text-xs text-amber-700 font-medium">
+              <span className="text-xs text-amber-700 font-medium shrink-0">
                 ● Atendendo {p.patientName}
               </span>
             ) : (
-              <span className="text-xs text-emerald-700 font-medium">
+              <span className="text-xs text-emerald-700 font-medium shrink-0">
                 ● Disponível
               </span>
             )}
@@ -235,15 +270,24 @@ function ProfessionalPicker({
 function AssignmentSection({
   eventId,
   serviceType,
+  config,
+  channelSuffix = "",
   initialQueue,
   initialProfessionals,
+  label,
+  showHistory = true,
+  patientSpecialtyFilter,
 }: {
   eventId: string;
   serviceType: ServiceType;
+  config: Omit<AssignmentConfig, "secondPhase">;
+  channelSuffix?: string;
   initialQueue: QueueEntry[];
   initialProfessionals: ProfessionalStatus[];
+  label?: string;
+  showHistory?: boolean;
+  patientSpecialtyFilter?: string;
 }) {
-  const config = ASSIGNMENT_CONFIG[serviceType]!;
   const [queue, setQueue] = useState(initialQueue);
   const [professionals, setProfessionals] = useState(initialProfessionals);
   const [callingEntryId, setCallingEntryId] = useState<string | null>(null);
@@ -253,13 +297,13 @@ function AssignmentSection({
   const refresh = useCallback(() => {
     startRefreshTransition(async () => {
       const [freshQueue, freshProfessionals] = await Promise.all([
-        getControllerEntries(eventId, serviceType),
+        getControllerEntries(eventId, serviceType, config.waitingStatus, patientSpecialtyFilter),
         getProfessionalStatuses(eventId, config.role, config.busyStatus),
       ]);
       setQueue(freshQueue);
       setProfessionals(freshProfessionals);
     });
-  }, [eventId, serviceType, config.role, config.busyStatus]);
+  }, [eventId, serviceType, config.waitingStatus, config.role, config.busyStatus, patientSpecialtyFilter]);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -268,7 +312,7 @@ function AssignmentSection({
 
     const supabase = createClient();
     const channel = supabase
-      .channel(`ctrl:${serviceType}:${eventId}`)
+      .channel(`ctrl:${serviceType}${channelSuffix}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },
@@ -292,10 +336,15 @@ function AssignmentSection({
       clearInterval(interval);
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [eventId, serviceType, refresh]);
+  }, [eventId, serviceType, channelSuffix, refresh]);
 
   return (
     <div className="space-y-6">
+      {label && (
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-1">
+          {label}
+        </p>
+      )}
       {/* Professional roster */}
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -318,6 +367,11 @@ function AssignmentSection({
                 )}
               >
                 <p className="text-sm font-medium">{p.name}</p>
+                {p.specialty && (
+                  <p className="text-xs text-muted-foreground">
+                    {SPECIALTY_LABELS[p.specialty] ?? p.specialty}
+                  </p>
+                )}
                 <p className={cn("text-xs font-medium", p.busy ? "text-amber-700" : "text-emerald-700")}>
                   {p.busy ? `● Atendendo ${p.patientName}` : "● Disponível"}
                 </p>
@@ -363,6 +417,7 @@ function AssignmentSection({
               {callingEntryId === entry.id && (
                 <ProfessionalPicker
                   professionals={professionals}
+                  patientSpecialty={entry.medical_specialty}
                   onSelect={async (professionalId) => {
                     const r = await assignToProfessional(
                       entry.id,
@@ -383,7 +438,7 @@ function AssignmentSection({
         )}
       </div>
 
-      <HistorySection eventId={eventId} serviceType={serviceType} />
+      {showHistory && <HistorySection eventId={eventId} serviceType={serviceType} />}
     </div>
   );
 }
@@ -393,6 +448,7 @@ function AssignmentSection({
 interface Props {
   eventId: string;
   serviceTypes: ServiceType[];
+  controllerSpecialty: string | null;
   initialQueues: Record<string, QueueEntry[]>;
   initialProfessionals: Record<string, ProfessionalStatus[]>;
 }
@@ -400,6 +456,7 @@ interface Props {
 export function ControllerClient({
   eventId,
   serviceTypes,
+  controllerSpecialty,
   initialQueues,
   initialProfessionals,
 }: Props) {
@@ -415,21 +472,53 @@ export function ControllerClient({
 
   function renderService(st: ServiceType) {
     const config = ASSIGNMENT_CONFIG[st];
-    if (config) {
+    if (!config) {
+      return (
+        <ServiceQueue
+          eventId={eventId}
+          serviceType={st}
+          initialEntries={initialQueues[st] ?? []}
+        />
+      );
+    }
+
+    if (config.secondPhase) {
+      if (controllerSpecialty) {
+        // Specialty controller → only doctor assignment for their specialty
+        return (
+          <AssignmentSection
+            eventId={eventId}
+            serviceType={st}
+            config={config.secondPhase}
+            channelSuffix=":2"
+            initialQueue={initialQueues[`${st}:2`] ?? []}
+            initialProfessionals={initialProfessionals[`${st}:2`] ?? []}
+            patientSpecialtyFilter={controllerSpecialty}
+            showHistory={true}
+          />
+        );
+      }
+      // Nursing controller → only nursing triage phase
       return (
         <AssignmentSection
           eventId={eventId}
           serviceType={st}
+          config={config}
+          channelSuffix=""
           initialQueue={initialQueues[st] ?? []}
           initialProfessionals={initialProfessionals[st] ?? []}
+          showHistory={false}
         />
       );
     }
+
     return (
-      <ServiceQueue
+      <AssignmentSection
         eventId={eventId}
         serviceType={st}
-        initialEntries={initialQueues[st] ?? []}
+        config={config}
+        initialQueue={initialQueues[st] ?? []}
+        initialProfessionals={initialProfessionals[st] ?? []}
       />
     );
   }

@@ -32,6 +32,7 @@ export async function submitTriage(input: {
     temperature: number | null;
   };
   action: "dispense" | "forward";
+  specialty?: string;
 }): Promise<{ error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Não autenticado." };
@@ -54,6 +55,10 @@ export async function submitTriage(input: {
     nursing_completed_at: new Date().toISOString(),
     chief_complaint: input.chiefComplaint.trim() || null,
     assigned_to: null, // nurse is free once triage is done
+    medical_specialty: input.action === "forward" ? (input.specialty ?? null) : null,
+    // Reset start fields so doctor gets a clean "Iniciar atendimento" prompt
+    started_at: null,
+    started_by: null,
   };
 
   if (input.action === "dispense") {
