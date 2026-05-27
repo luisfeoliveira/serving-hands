@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
 import type {
@@ -178,20 +177,23 @@ export async function getProfessionalStatuses(
 export async function getProfessionalEntries(
   eventId: string,
   serviceType: ServiceType,
-  professionalId: string,
+  professionalId: string | null, // null = admin acting as professional (show all)
   statusOverride?: string
 ): Promise<QueueEntry[]> {
   const config = ASSIGNMENT_CONFIG[serviceType];
   const busyStatus = statusOverride ?? config?.busyStatus ?? "in_progress";
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
     .eq("service_type", serviceType)
-    .eq("status", busyStatus)
-    .eq("assigned_to", professionalId)
+    .eq("status", busyStatus);
+
+  if (professionalId) query = query.eq("assigned_to", professionalId);
+
+  const { data, error } = await query
     .order("priority", { ascending: false })
     .order("position", { ascending: true });
 
@@ -296,16 +298,19 @@ export async function getBazaarBrowsingEntries(
 
 export async function getBeautyEntries(
   eventId: string,
-  professionalId: string
+  professionalId: string | null // null = admin (show all)
 ): Promise<QueueEntry[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
     .in("service_type", ["cabeleireiro", "sobrancelha", "estetica"])
-    .eq("status", "in_progress")
-    .eq("assigned_to", professionalId)
+    .eq("status", "in_progress");
+
+  if (professionalId) query = query.eq("assigned_to", professionalId);
+
+  const { data, error } = await query
     .order("priority", { ascending: false })
     .order("position", { ascending: true });
 
@@ -323,7 +328,6 @@ export async function abandonEntry(entryId: string): Promise<{ error?: string }>
     .eq("id", entryId);
 
   if (error) return { error: error.message };
-  revalidatePath("/", "layout");
   return {};
 }
 
@@ -341,6 +345,5 @@ export async function updateEntryStatus(
     .eq("id", entryId);
 
   if (error) return { error: error.message };
-  revalidatePath("/", "layout");
   return {};
 }

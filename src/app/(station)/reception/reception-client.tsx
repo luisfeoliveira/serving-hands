@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
-import { lookupPerson, registerPerson, addServices, getQueueSizes } from "./actions";
+import { lookupPerson, registerPerson, addServices } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
 import type { ServiceType, DbPerson } from "@/lib/types";
 
@@ -48,18 +48,28 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [queueSizes, setQueueSizes] = useState(initialQueueSizes);
+  const [avgDurationMins, setAvgDurationMins] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const supabase = createClient();
     const refresh = async () => {
-      const fresh = await getQueueSizes(eventId);
-      setQueueSizes(fresh);
+      try {
+        const res = await fetch(`/api/queue/sizes?eventId=${eventId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setQueueSizes(data.sizes ?? {});
+        setAvgDurationMins(data.avgDurationMins ?? {});
+      } catch {
+        // keep current state
+      }
     };
+    // Initial fetch to get avg durations (SSR only gives queue sizes)
+    refresh();
     const channel = supabase
       .channel(`reception:sizes:${eventId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "service_registrations" }, refresh)
       .subscribe();
-    const interval = setInterval(refresh, 10_000);
+    const interval = setInterval(refresh, 15_000);
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
@@ -257,6 +267,8 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
                 const checked =
                   alreadyRegistered || selectedServices.includes(service);
                 const queueCount = queueSizes[service] ?? 0;
+                const avgMins = avgDurationMins[service];
+                const estimatedWaitMins = avgMins ? Math.round(queueCount * avgMins) : null;
 
                 return (
                   <label
@@ -277,9 +289,16 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
                       {SERVICE_LABELS[service]}
                     </span>
                     {queueCount > 0 && (
-                      <Badge variant="outline" className="text-xs tabular-nums">
-                        {queueCount} na fila
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge variant="outline" className="text-xs tabular-nums">
+                          {queueCount} na fila
+                        </Badge>
+                        {estimatedWaitMins !== null && estimatedWaitMins > 0 && (
+                          <Badge variant="secondary" className="text-xs tabular-nums text-muted-foreground">
+                            ~{estimatedWaitMins} min
+                          </Badge>
+                        )}
+                      </div>
                     )}
                     {alreadyRegistered && (
                       <Badge variant="secondary" className="text-xs">

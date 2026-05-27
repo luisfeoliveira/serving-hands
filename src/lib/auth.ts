@@ -1,13 +1,15 @@
 "use server";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { roleToPath } from "@/lib/roles";
 import type { DbUser } from "@/lib/types";
 
 // ─── Get current volunteer profile ───────────────────────────────────────────
+// Wrapped in React.cache — layout + page share one DB round-trip per request.
 
-export async function getProfile(): Promise<DbUser | null> {
+export const getProfile = cache(async (): Promise<DbUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +23,7 @@ export async function getProfile(): Promise<DbUser | null> {
     .single();
 
   return data ?? null;
-}
+});
 
 // ─── Require auth — use in server components/actions ─────────────────────────
 // Redirects to /login if not authenticated or inactive.

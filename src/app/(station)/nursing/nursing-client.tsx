@@ -308,7 +308,7 @@ function TriageCard({
 
 interface Props {
   eventId: string;
-  nurseId: string;
+  nurseId: string | null;
   initialEntries: QueueEntry[];
 }
 

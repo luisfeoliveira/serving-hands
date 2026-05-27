@@ -126,7 +126,7 @@ function AppointmentCard({
 
 interface Props {
   eventId: string;
-  professionalId: string;
+  professionalId: string | null;
   initialEntries: QueueEntry[];
 }
 

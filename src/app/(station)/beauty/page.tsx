@@ -6,12 +6,11 @@ import { getBeautyEntries } from "@/lib/queue";
 import { BeautyClient } from "./beauty-client";
 
 export default async function BeautyPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
   if (profile.role !== "beleza" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -20,12 +19,12 @@ export default async function BeautyPage() {
     );
   }
 
-  const initialEntries = await getBeautyEntries(event.id, profile.id);
+  const initialEntries = await getBeautyEntries(event.id, profile.role === "admin" ? null : profile.id);
 
   return (
     <BeautyClient
       eventId={event.id}
-      professionalId={profile.id}
+      professionalId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

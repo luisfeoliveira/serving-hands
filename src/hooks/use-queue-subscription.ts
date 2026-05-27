@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getQueueEntries } from "@/lib/queue";
 import type { QueueEntry, ServiceType } from "@/lib/types";
 
 export function useQueueSubscription(
@@ -16,14 +15,20 @@ export function useQueueSubscription(
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getQueueEntries(eventId, serviceType);
-      setEntries(fresh);
+      try {
+        const res = await fetch(
+          `/api/queue/active?eventId=${eventId}&serviceType=${serviceType}`
+        );
+        if (!res.ok) return;
+        const fresh = await res.json();
+        setEntries(fresh);
+      } catch {
+        // network error — keep current state
+      }
     });
   }, [eventId, serviceType]);
 
   useEffect(() => {
-    refresh();
-
     const supabase = createClient();
     const channel = supabase
       .channel(`queue:${serviceType}:${eventId}`)

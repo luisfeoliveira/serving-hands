@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { updateEntryStatus } from "@/lib/queue";
@@ -73,6 +72,5 @@ export async function submitTriage(input: {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/", "layout");
   return {};
 }

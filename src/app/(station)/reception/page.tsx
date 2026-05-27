@@ -6,13 +6,12 @@ import { getQueueSizes } from "./actions";
 import { ReceptionClient } from "./reception-client";
 
 export default async function ReceptionPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
 
   if (profile.role !== "recepcao" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">

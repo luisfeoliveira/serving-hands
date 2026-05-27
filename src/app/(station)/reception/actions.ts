@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ServiceType, DbPerson } from "@/lib/types";
 
@@ -186,6 +185,5 @@ async function insertServices(
     if (error) return { error: `Erro ao registrar ${service}: ${error.message}` };
   }
 
-  revalidatePath("/reception");
   return {};
 }

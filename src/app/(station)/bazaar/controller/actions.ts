@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function callBazaarEntry(
@@ -14,6 +13,5 @@ export async function callBazaarEntry(
     .eq("status", "waiting"); // guard: only advance if still waiting
 
   if (error) return { error: error.message };
-  revalidatePath("/", "layout");
   return {};
 }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="9" fill="#aa2d00"/>
+  <!-- Stylised open hands cradling a heart -->
+  <!-- Left hand arc -->
+  <path d="M8 25 C5 20 5.5 13 9 9.5 C10.5 8 12.5 7.5 14 9" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right hand arc -->
+  <path d="M24 25 C27 20 26.5 13 23 9.5 C21.5 8 19.5 7.5 18 9" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Base line connecting hands -->
+  <path d="M8 25 Q16 27.5 24 25" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <!-- Heart dot above -->
+  <path d="M16 14 C15.5 14 12 11.5 12 9.5 C12 8.2 13 7.5 14 7.5 C14.8 7.5 15.5 8 16 8.7 C16.5 8 17.2 7.5 18 7.5 C19 7.5 20 8.2 20 9.5 C20 11.5 16.5 14 16 14Z" fill="white"/>
+</svg>

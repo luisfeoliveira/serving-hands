@@ -19,9 +19,10 @@ const STATUS_BORDER: Record<string, string> = {
 interface QueueRowProps {
   entry: QueueEntry;
   actions?: React.ReactNode;
+  waitLabel?: string; // e.g. "~15 min"
 }
 
-export function QueueRow({ entry, actions }: QueueRowProps) {
+export function QueueRow({ entry, actions, waitLabel }: QueueRowProps) {
   const borderColor = STATUS_BORDER[entry.status] ?? "border-l-border";
 
   return (
@@ -69,9 +70,12 @@ export function QueueRow({ entry, actions }: QueueRowProps) {
           )}
         </div>
 
-        {/* Status */}
-        <div className="shrink-0">
+        {/* Status + wait estimate */}
+        <div className="shrink-0 flex flex-col items-end gap-1">
           <StatusBadge status={entry.status} />
+          {waitLabel && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">{waitLabel}</span>
+          )}
         </div>
       </div>
 

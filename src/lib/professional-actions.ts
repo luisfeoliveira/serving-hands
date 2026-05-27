@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppointmentData } from "@/lib/types";
@@ -21,7 +20,6 @@ export async function startAttendance(
     .eq("id", entryId);
 
   if (error) return { error: error.message };
-  revalidatePath("/", "layout");
   return {};
 }
 
@@ -56,6 +54,5 @@ export async function completeAppointment(input: {
 
   if (srErr) return { error: srErr.message };
 
-  revalidatePath("/", "layout");
   return {};
 }

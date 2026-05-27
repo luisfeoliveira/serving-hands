@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getProfessionalEntries } from "@/lib/queue";
 import type { QueueEntry } from "@/lib/types";
 
 export function useNursingQueue(
   eventId: string,
-  nurseId: string,
+  nurseId: string | null,
   initialEntries: QueueEntry[]
 ) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
@@ -16,17 +15,22 @@ export function useNursingQueue(
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getProfessionalEntries(eventId, "medicina", nurseId);
-      setEntries(fresh);
+      try {
+        const params = new URLSearchParams({ eventId, serviceType: "medicina" });
+        if (nurseId) params.set("professionalId", nurseId);
+        const res = await fetch(`/api/queue/professional?${params}`);
+        if (!res.ok) return;
+        setEntries(await res.json());
+      } catch {
+        // network error — keep current state
+      }
     });
   }, [eventId, nurseId]);
 
   useEffect(() => {
-    refresh();
-
     const supabase = createClient();
     const channel = supabase
-      .channel(`nursing:${nurseId}:${eventId}`)
+      .channel(`nursing:${nurseId ?? "admin"}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },

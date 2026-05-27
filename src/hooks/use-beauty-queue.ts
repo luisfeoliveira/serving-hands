@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback, useTransition, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getBeautyEntries } from "@/lib/queue";
 import type { QueueEntry } from "@/lib/types";
 
 export function useBeautyQueue(
   eventId: string,
-  professionalId: string,
+  professionalId: string | null,
   initialEntries: QueueEntry[]
 ) {
   const [entries, setEntries] = useState<QueueEntry[]>(initialEntries);
@@ -16,17 +15,22 @@ export function useBeautyQueue(
 
   const refresh = useCallback(() => {
     startTransition(async () => {
-      const fresh = await getBeautyEntries(eventId, professionalId);
-      setEntries(fresh);
+      try {
+        const params = new URLSearchParams({ eventId });
+        if (professionalId) params.set("professionalId", professionalId);
+        const res = await fetch(`/api/queue/beauty?${params}`);
+        if (!res.ok) return;
+        setEntries(await res.json());
+      } catch {
+        // network error — keep current state
+      }
     });
   }, [eventId, professionalId]);
 
   useEffect(() => {
-    refresh();
-
     const supabase = createClient();
     const channel = supabase
-      .channel(`beauty:${professionalId}:${eventId}`)
+      .channel(`beauty:${professionalId ?? "admin"}:${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_registrations" },

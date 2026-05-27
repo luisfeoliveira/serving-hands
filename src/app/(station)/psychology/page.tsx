@@ -6,12 +6,11 @@ import { getProfessionalEntries } from "@/lib/queue";
 import { ProfessionalClient } from "@/components/professional/professional-client";
 
 export default async function PsychologyPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
   if (profile.role !== "psicologo" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -20,13 +19,13 @@ export default async function PsychologyPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "psicologia", profile.id);
+  const initialEntries = await getProfessionalEntries(event.id, "psicologia", profile.role === "admin" ? null : profile.id);
 
   return (
     <ProfessionalClient
       eventId={event.id}
       serviceType="psicologia"
-      professionalId={profile.id}
+      professionalId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

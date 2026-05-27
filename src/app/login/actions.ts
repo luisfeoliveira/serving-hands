@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { roleToPath } from "@/lib/roles";
-export type LoginState = { error: string } | null;
+
+export type LoginState = { error: string } | { success: string } | null;
 
 export async function signIn(
   _prev: LoginState,
@@ -49,4 +50,25 @@ export async function signIn(
   }
 
   redirect(roleToPath(profile.role));
+}
+
+export async function resetPassword(
+  _prev: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const email = (formData.get("email") as string | null)?.trim() ?? "";
+  if (!email) return { error: "Informe o e-mail." };
+
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/callback?type=recovery`,
+  });
+
+  // Always return success — never reveal whether email is registered
+  return {
+    success:
+      "Se este e-mail estiver cadastrado, você receberá as instruções em breve.",
+  };
 }

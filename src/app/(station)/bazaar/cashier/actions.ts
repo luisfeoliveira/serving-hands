@@ -1,14 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BAZAAR_PRICE_PER_ITEM, BAZAAR_MAX_ITEMS } from "../constants";
 
 export async function completeBazaarSale(input: {
-  entryId: string;
+  entryId: string;        // service_registration id
+  personId: string;       // people id
+  eventId: string;
   qty: number;
-  method: "dinheiro" | "pix";
+  method: "cash" | "pix";
   received?: number;
 }): Promise<{ error?: string }> {
   if (input.qty < 1 || input.qty > BAZAAR_MAX_ITEMS) {
@@ -21,28 +22,23 @@ export async function completeBazaarSale(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado." };
 
-  const total = input.qty * BAZAAR_PRICE_PER_ITEM;
+  const amount = input.qty * BAZAAR_PRICE_PER_ITEM;
 
-  if (input.method === "dinheiro" && (input.received ?? 0) < total) {
+  if (input.method === "cash" && (input.received ?? 0) < amount) {
     return { error: "Valor recebido insuficiente." };
   }
 
   const admin = createAdminClient();
 
-  const { error: apptErr } = await admin.from("appointments").insert({
-    service_registration_id: input.entryId,
-    data: {
-      qty: input.qty,
-      total,
-      method: input.method,
-      ...(input.method === "dinheiro" && input.received != null && {
-        received: input.received,
-        change: input.received - total,
-      }),
-    },
-    created_by: user.id,
+  const { error: txErr } = await admin.from("bazar_transactions").insert({
+    event_id: input.eventId,
+    person_id: input.personId,
+    item_count: input.qty,
+    amount,
+    payment_method: input.method,
+    processed_by: user.id,
   });
-  if (apptErr) return { error: apptErr.message };
+  if (txErr) return { error: txErr.message };
 
   const { error: srErr } = await admin
     .from("service_registrations")
@@ -55,6 +51,5 @@ export async function completeBazaarSale(input: {
 
   if (srErr) return { error: srErr.message };
 
-  revalidatePath("/", "layout");
   return {};
 }

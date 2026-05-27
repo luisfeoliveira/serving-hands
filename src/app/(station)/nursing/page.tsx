@@ -6,13 +6,12 @@ import { getProfessionalEntries } from "@/lib/queue";
 import { NursingClient } from "./nursing-client";
 
 export default async function NursingPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
 
   if (profile.role !== "enfermagem" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -21,12 +20,12 @@ export default async function NursingPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "medicina", profile.id);
+  const initialEntries = await getProfessionalEntries(event.id, "medicina", profile.role === "admin" ? null : profile.id);
 
   return (
     <NursingClient
       eventId={event.id}
-      nurseId={profile.id}
+      nurseId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

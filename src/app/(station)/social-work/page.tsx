@@ -6,12 +6,11 @@ import { getProfessionalEntries } from "@/lib/queue";
 import { ProfessionalClient } from "@/components/professional/professional-client";
 
 export default async function SocialWorkPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
   if (profile.role !== "assistente_social" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -20,13 +19,13 @@ export default async function SocialWorkPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "servico_social", profile.id);
+  const initialEntries = await getProfessionalEntries(event.id, "servico_social", profile.role === "admin" ? null : profile.id);
 
   return (
     <ProfessionalClient
       eventId={event.id}
       serviceType="servico_social"
-      professionalId={profile.id}
+      professionalId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

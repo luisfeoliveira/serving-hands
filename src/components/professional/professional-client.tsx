@@ -360,7 +360,7 @@ function AppointmentCard({
 interface Props {
   eventId: string;
   serviceType: ServiceType;
-  professionalId: string;
+  professionalId: string | null;
   initialEntries: QueueEntry[];
 }
 

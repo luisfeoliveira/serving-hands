@@ -12,13 +12,12 @@ import { ControllerClient } from "./controller-client";
 import type { ServiceType, QueueEntry, ProfessionalStatus } from "@/lib/types";
 
 export default async function ControllerPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
 
   if (profile.role !== "controlador" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -27,7 +26,12 @@ export default async function ControllerPage() {
     );
   }
 
-  const serviceTypes = (profile.service_types ?? []) as ServiceType[];
+  // Admin with no service_types sees all assignable services
+  const allServices = Object.keys(ASSIGNMENT_CONFIG) as ServiceType[];
+  const serviceTypes =
+    profile.role === "admin" && !profile.service_types?.length
+      ? allServices
+      : ((profile.service_types ?? []) as ServiceType[]);
   // Controller's own specialty — determines which medicina phase they manage
   const controllerSpecialty = profile.medical_specialty ?? null;
 

@@ -10,11 +10,7 @@ import { QueueList } from "@/components/queue/queue-list";
 import { QueueRow } from "@/components/queue/queue-row";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { createClient } from "@/lib/supabase/client";
-import {
-  getControllerEntries,
-  getProfessionalStatuses,
-  getCompletedEntries,
-} from "@/lib/queue";
+import { getCompletedEntries } from "@/lib/queue";
 import { ASSIGNMENT_CONFIG, type AssignmentConfig } from "@/lib/service-config";
 import { assignToProfessional, callEntry, completeEntry } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
@@ -290,26 +286,37 @@ function AssignmentSection({
 }) {
   const [queue, setQueue] = useState(initialQueue);
   const [professionals, setProfessionals] = useState(initialProfessionals);
+  const [avgDurationMin, setAvgDurationMin] = useState<number | null>(null);
   const [callingEntryId, setCallingEntryId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [, startRefreshTransition] = useTransition();
 
   const refresh = useCallback(() => {
     startRefreshTransition(async () => {
-      const [freshQueue, freshProfessionals] = await Promise.all([
-        getControllerEntries(eventId, serviceType, config.waitingStatus, patientSpecialtyFilter),
-        getProfessionalStatuses(eventId, config.role, config.busyStatus),
-      ]);
-      setQueue(freshQueue);
-      setProfessionals(freshProfessionals);
+      try {
+        const params = new URLSearchParams({
+          eventId,
+          serviceType,
+          waitingStatus: config.waitingStatus,
+          role: config.role,
+          busyStatus: config.busyStatus,
+        });
+        if (patientSpecialtyFilter) params.set("specialtyFilter", patientSpecialtyFilter);
+        const res = await fetch(`/api/queue/controller?${params}`);
+        if (!res.ok) return;
+        const { queue: freshQueue, professionals: freshProfessionals, avgDurationMin: avg } = await res.json();
+        setQueue(freshQueue);
+        setProfessionals(freshProfessionals);
+        if (typeof avg === "number") setAvgDurationMin(avg);
+      } catch {
+        // network error — keep current state
+      }
     });
   }, [eventId, serviceType, config.waitingStatus, config.role, config.busyStatus, patientSpecialtyFilter]);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    refresh();
-
     const supabase = createClient();
     const channel = supabase
       .channel(`ctrl:${serviceType}${channelSuffix}:${eventId}`)
@@ -383,10 +390,17 @@ function AssignmentSection({
 
       {/* Waiting queue */}
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Aguardando · {queue.length}{" "}
-          {queue.length === 1 ? "pessoa" : "pessoas"}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Aguardando · {queue.length}{" "}
+            {queue.length === 1 ? "pessoa" : "pessoas"}
+          </p>
+          {avgDurationMin !== null && (
+            <span className="text-xs text-muted-foreground">
+              · ~{avgDurationMin} min/atendimento
+            </span>
+          )}
+        </div>
 
         {queue.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border py-12 text-center">
@@ -395,10 +409,13 @@ function AssignmentSection({
             </p>
           </div>
         ) : (
-          queue.map((entry) => (
+          queue.map((entry, idx) => {
+            const estimatedMin = avgDurationMin !== null ? (idx + 1) * avgDurationMin : null;
+            return (
             <div key={entry.id}>
               <QueueRow
                 entry={entry}
+                waitLabel={estimatedMin !== null ? `~${estimatedMin} min` : undefined}
                 actions={
                   callingEntryId === entry.id ? undefined : (
                     <>
@@ -434,7 +451,8 @@ function AssignmentSection({
                 />
               )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -537,13 +555,15 @@ export function ControllerClient({
 
   return (
     <Tabs defaultValue={serviceTypes[0]}>
-      <TabsList className="w-full overflow-x-auto">
-        {serviceTypes.map((st) => (
-          <TabsTrigger key={st} value={st} className="flex-1 min-w-max">
-            {SERVICE_LABELS[st]}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <div className="w-full overflow-x-auto">
+        <TabsList className="min-w-max justify-start">
+          {serviceTypes.map((st) => (
+            <TabsTrigger key={st} value={st} className="flex-none">
+              {SERVICE_LABELS[st]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
 
       {serviceTypes.map((st) => (
         <TabsContent key={st} value={st} className="mt-4 data-hidden:hidden" keepMounted>

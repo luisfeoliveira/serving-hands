@@ -12,7 +12,7 @@ import { BAZAAR_PRICE_PER_ITEM, BAZAAR_MAX_ITEMS } from "../constants";
 import { cn } from "@/lib/utils";
 import type { QueueEntry } from "@/lib/types";
 
-type PaymentMethod = "dinheiro" | "pix";
+type PaymentMethod = "cash" | "pix";
 
 // ─── Checkout panel ───────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ function CheckoutPanel({
   onCancel: () => void;
 }) {
   const [qty, setQty] = useState(1);
-  const [method, setMethod] = useState<PaymentMethod>("dinheiro");
+  const [method, setMethod] = useState<PaymentMethod>("cash");
   const [received, setReceived] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -43,15 +43,17 @@ function CheckoutPanel({
     startTransition(async () => {
       const r = await completeBazaarSale({
         entryId: entry.id,
+        personId: entry.person_id,
+        eventId: entry.event_id,
         qty,
         method,
-        received: method === "dinheiro" ? receivedNum : undefined,
+        received: method === "cash" ? receivedNum : undefined,
       });
       if (r.error) {
         toast.error(r.error);
       } else {
         const changeMsg =
-          method === "dinheiro" && change > 0
+          method === "cash" && change > 0
             ? ` · Troco R$${change.toFixed(2)}`
             : "";
         toast.success(
@@ -133,7 +135,7 @@ function CheckoutPanel({
             Pagamento
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {(["dinheiro", "pix"] as PaymentMethod[]).map((m) => (
+            {(["cash", "pix"] as PaymentMethod[]).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -145,14 +147,14 @@ function CheckoutPanel({
                     : "border-border hover:bg-muted/40 text-foreground"
                 )}
               >
-                {m === "dinheiro" ? "Dinheiro" : "PIX"}
+                {m === "cash" ? "Dinheiro" : "PIX"}
               </button>
             ))}
           </div>
         </div>
 
         {/* Cash calculator */}
-        {method === "dinheiro" && (
+        {method === "cash" && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Valor recebido

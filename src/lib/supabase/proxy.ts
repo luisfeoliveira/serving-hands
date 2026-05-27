@@ -29,8 +29,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to /login (except /login itself)
-  if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+  // Allow unauthenticated access to /login and /auth/* routes
+  // (callback + set-password must be reachable before session exists)
+  const { pathname } = request.nextUrl;
+  const isPublic = pathname.startsWith("/login") || pathname.startsWith("/auth/");
+
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

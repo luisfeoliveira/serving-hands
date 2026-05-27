@@ -6,12 +6,11 @@ import { getProfessionalEntries } from "@/lib/queue";
 import { ProfessionalClient } from "@/components/professional/professional-client";
 
 export default async function SpeechTherapyPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
   if (profile.role !== "fonoaudiologo" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -20,13 +19,13 @@ export default async function SpeechTherapyPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "fonoaudiologia", profile.id);
+  const initialEntries = await getProfessionalEntries(event.id, "fonoaudiologia", profile.role === "admin" ? null : profile.id);
 
   return (
     <ProfessionalClient
       eventId={event.id}
       serviceType="fonoaudiologia"
-      professionalId={profile.id}
+      professionalId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

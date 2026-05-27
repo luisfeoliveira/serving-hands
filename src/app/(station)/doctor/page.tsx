@@ -6,13 +6,12 @@ import { getProfessionalEntries } from "@/lib/queue";
 import { DoctorClient } from "./doctor-client";
 
 export default async function DoctorPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
 
   if (profile.role !== "medico" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -21,12 +20,12 @@ export default async function DoctorPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "medicina", profile.id, "in_progress");
+  const initialEntries = await getProfessionalEntries(event.id, "medicina", profile.role === "admin" ? null : profile.id, "in_progress");
 
   return (
     <DoctorClient
       eventId={event.id}
-      doctorId={profile.id}
+      doctorId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
     />
   );

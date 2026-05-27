@@ -1,9 +1,10 @@
 "use server";
 
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DbEvent } from "@/lib/types";
 
-export async function getActiveEvent(): Promise<DbEvent | null> {
+export const getActiveEvent = cache(async (): Promise<DbEvent | null> => {
   const admin = createAdminClient();
   const { data } = await admin
     .from("events")
@@ -11,4 +12,4 @@ export async function getActiveEvent(): Promise<DbEvent | null> {
     .eq("active", true)
     .single();
   return data ?? null;
-}
+});

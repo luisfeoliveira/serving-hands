@@ -6,12 +6,11 @@ import { getBazaarWaitingEntries, getBazaarBrowsingEntries } from "@/lib/queue";
 import { BazaarControllerClient } from "./bazaar-controller-client";
 
 export default async function BazaarControllerPage() {
-  const profile = await requireProfile();
+  const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
   if (profile.role !== "bazar_controlador" && profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
 
-  const event = await getActiveEvent();
   if (!event) {
     return (
       <div className="text-center py-12 text-muted-foreground">
