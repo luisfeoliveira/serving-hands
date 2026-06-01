@@ -415,6 +415,10 @@ function AssignmentSection({
         ) : (
           queue.map((entry, idx) => {
             const estimatedMin = avgDurationMin !== null ? (idx + 1) * avgDurationMin : null;
+            const busyElsewhere = entry.active_services && entry.active_services.length > 0;
+            const busyLabel = busyElsewhere
+              ? entry.active_services!.map((s) => SERVICE_LABELS[s] ?? s).join(", ")
+              : null;
             return (
             <div key={entry.id}>
               <QueueRow
@@ -424,13 +428,19 @@ function AssignmentSection({
                   callingEntryId === entry.id ? undefined : (
                     <>
                       <AbandonButton entryId={entry.id} onAbandoned={refresh} />
-                      <Button
-                        size="sm"
-                        onClick={() => setCallingEntryId(entry.id)}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Chamar
-                      </Button>
+                      {busyElsewhere ? (
+                        <span className="text-xs text-amber-700 font-medium px-2 py-1 rounded-md bg-amber-50 border border-amber-200 shrink-0">
+                          Em atendimento · {busyLabel}
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => setCallingEntryId(entry.id)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Chamar
+                        </Button>
+                      )}
                     </>
                   )
                 }
