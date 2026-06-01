@@ -7,12 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-export function SetPasswordForm() {
+export function SetPasswordForm({ defaultName }: { defaultName: string }) {
   const [state, action, pending] = useActionState(setPassword, null);
   const [show, setShow] = useState(false);
 
   return (
     <form action={action} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="name">Seu nome</Label>
+        <Input
+          id="name"
+          name="name"
+          defaultValue={defaultName}
+          required
+          placeholder="Nome completo"
+          className="h-11"
+          autoComplete="name"
+        />
+      </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="password">Nova senha</Label>
         <div className="relative">

@@ -137,7 +137,7 @@ export async function getProfessionalStatuses(
 
   const { data: professionals } = await admin
     .from("users")
-    .select("id, name, medical_specialty")
+    .select("id, name, role, medical_specialty")
     .eq("role", role)
     .eq("active", true)
     .order("name");
@@ -166,6 +166,7 @@ export async function getProfessionalStatuses(
   return professionals.map((p) => ({
     id: p.id,
     name: p.name,
+    role: (p as Record<string, unknown>).role as UserRole,
     busy: !!busyMap[p.id],
     patientName: busyMap[p.id],
     specialty: (p as Record<string, unknown>).medical_specialty as string | null ?? null,

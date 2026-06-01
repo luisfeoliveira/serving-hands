@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { Hashtag } from "@/components/hashtag";
 import { FinishDayButton } from "@/components/finish-day-button";
 import { DayFinishedScreen } from "@/components/day-finished-screen";
+import { AdminNavDrawer } from "@/components/admin-nav-drawer";
 
 export default async function StationLayout({
   children,
@@ -29,6 +30,7 @@ export default async function StationLayout({
       <div className="min-h-screen flex flex-col bg-background">
         <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {profile.role === "admin" && <AdminNavDrawer />}
             <Logo />
             <span className="text-sm text-muted-foreground hidden sm:block">
               {roleLabel(profile.role)}

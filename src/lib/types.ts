@@ -109,6 +109,7 @@ export interface DbServiceRegistration {
 export interface ProfessionalStatus {
   id: string;
   name: string;
+  role: UserRole;
   busy: boolean;
   patientName?: string;
   specialty?: string | null;

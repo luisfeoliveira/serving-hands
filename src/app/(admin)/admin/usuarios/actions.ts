@@ -25,17 +25,17 @@ const { data, error: authError } = await admin.auth.admin.inviteUserByEmail(
   if (authError) return { error: authError.message };
   if (!data.user) return { error: "Erro ao criar conta." };
 
-  // Update the row the trigger created (role defaults to 'recepcao', active=false)
+  // Upsert: handles trigger-race (trigger may fire before or after this runs)
   const { error } = await admin
     .from("users")
-    .update({
+    .upsert({
+      id: data.user.id,
       name: input.name,
       role: input.role,
       service_types: input.service_types?.length ? input.service_types : null,
       medical_specialty: input.medical_specialty || null,
       active: true,
-    })
-    .eq("id", data.user.id);
+    }, { onConflict: "id" });
 
   if (error) return { error: error.message };
   revalidatePath("/admin/usuarios");

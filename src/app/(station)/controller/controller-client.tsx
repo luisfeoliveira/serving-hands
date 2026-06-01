@@ -14,6 +14,7 @@ import { getCompletedEntries } from "@/lib/queue";
 import { ASSIGNMENT_CONFIG, type AssignmentConfig } from "@/lib/service-config";
 import { assignToProfessional, callEntry, completeEntry } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
+import { roleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { ServiceType, QueueEntry, ProfessionalStatus } from "@/lib/types";
 import { useEffect } from "react";
@@ -183,6 +184,13 @@ const SPECIALTY_LABELS: Record<string, string> = {
   dermatologia: "Dermatologia",
 };
 
+/** "Médico · Cardiologia", "Cabeleireira · Feminino", "Odontólogo" */
+function professionLabel(p: ProfessionalStatus): string {
+  const base = roleLabel(p.role);
+  if (!p.specialty) return base;
+  return `${base} · ${SPECIALTY_LABELS[p.specialty] ?? p.specialty}`;
+}
+
 function ProfessionalPicker({
   professionals,
   patientSpecialty,
@@ -230,11 +238,9 @@ function ProfessionalPicker({
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-medium truncate">{p.name}</span>
-              {p.specialty && (
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {SPECIALTY_LABELS[p.specialty] ?? p.specialty}
-                </span>
-              )}
+              <span className="text-xs text-muted-foreground shrink-0">
+                {professionLabel(p)}
+              </span>
             </div>
             {p.busy ? (
               <span className="text-xs text-amber-700 font-medium shrink-0">
@@ -374,11 +380,9 @@ function AssignmentSection({
                 )}
               >
                 <p className="text-sm font-medium">{p.name}</p>
-                {p.specialty && (
-                  <p className="text-xs text-muted-foreground">
-                    {SPECIALTY_LABELS[p.specialty] ?? p.specialty}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {professionLabel(p)}
+                </p>
                 <p className={cn("text-xs font-medium", p.busy ? "text-amber-700" : "text-emerald-700")}>
                   {p.busy ? `● Atendendo ${p.patientName}` : "● Disponível"}
                 </p>

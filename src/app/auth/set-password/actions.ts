@@ -11,9 +11,12 @@ export async function setPassword(
   _prev: SetPasswordState,
   formData: FormData
 ): Promise<SetPasswordState> {
+  const name     = ((formData.get("name") as string) ?? "").trim();
   const password = (formData.get("password") as string) ?? "";
-  const confirm = (formData.get("confirm") as string) ?? "";
+  const confirm  = (formData.get("confirm") as string) ?? "";
 
+  if (!name)
+    return { error: "Preencha seu nome." };
   if (password.length < 8)
     return { error: "Senha deve ter ao menos 8 caracteres." };
   if (password !== confirm)
@@ -25,13 +28,13 @@ export async function setPassword(
   if (error || !data.user)
     return { error: "Não foi possível definir a senha. Tente novamente." };
 
-  // Redirect to correct station based on role
   const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("users")
-    .select("role, active")
-    .eq("id", data.user.id)
-    .single();
+
+  // Save name + fetch role/active in parallel
+  const [, { data: profile }] = await Promise.all([
+    admin.from("users").update({ name }).eq("id", data.user.id),
+    admin.from("users").select("role, active").eq("id", data.user.id).single(),
+  ]);
 
   if (!profile?.active)
     return { error: "Conta inativa. Contacte o administrador." };

@@ -26,7 +26,6 @@ export async function submitTriage(input: {
   vitals: {
     bp_systolic: number | null;
     bp_diastolic: number | null;
-    blood_glucose: number | null;
     weight: number | null;
     temperature: number | null;
   };
