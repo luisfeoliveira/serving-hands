@@ -63,7 +63,7 @@ export async function resetPassword(
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?type=recovery`,
+    redirectTo: `${siteUrl}/auth/confirm`,
   });
 
   // Always return success — never reveal whether email is registered

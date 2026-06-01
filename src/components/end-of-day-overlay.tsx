@@ -1,59 +1,73 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import type { RecapData } from "@/app/api/recap/route";
 
 // ─── Confetti ─────────────────────────────────────────────────────────────────
 
-const CONFETTI_COLORS = [
-  "#ff595e", "#ffca3a", "#6a4c93", "#1982c4", "#8ac926", "#ff924c",
-  "#c77dff", "#4cc9f0", "#f72585", "#4361ee",
+const COLORS = [
+  "#ff595e", "#ffca3a", "#6a4c93", "#1982c4", "#8ac926",
+  "#ff924c", "#c77dff", "#4cc9f0", "#f72585", "#4361ee",
 ];
 
-function Confetti() {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 90 }, (_, i) => ({
-        id: i,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        left: `${(i * 1.12) % 100}%`,
-        delay: `${(i * 0.04) % 3}s`,
-        duration: `${3.5 + (i * 0.06) % 2}s`,
-        shape: i % 3, // 0=circle, 1=rect, 2=rect-tall
-        size: 7 + (i % 5),
-      })),
-    []
-  );
+export function Confetti() {
+  useEffect(() => {
+    // Centre burst
+    confetti({
+      particleCount: 140,
+      spread: 100,
+      startVelocity: 55,
+      origin: { x: 0.5, y: 0.55 },
+      colors: COLORS,
+      zIndex: 9999,
+    });
 
-  return (
-    <>
-      <style>{`
-        @keyframes confetti-fall {
-          0%   { transform: translateY(-20px) rotate(0deg);    opacity: 1; }
-          80%  { opacity: 1; }
-          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-        }
-      `}</style>
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-40">
-        {pieces.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              position: "absolute",
-              left: p.left,
-              top: "-12px",
-              width: p.shape === 2 ? `${p.size / 2}px` : `${p.size}px`,
-              height: p.shape === 2 ? `${p.size * 1.8}px` : `${p.size}px`,
-              backgroundColor: p.color,
-              borderRadius: p.shape === 0 ? "50%" : "2px",
-              animation: `confetti-fall ${p.duration} ${p.delay} ease-in both`,
-            }}
-          />
-        ))}
-      </div>
-    </>
-  );
+    // Side cannons slightly after
+    const t1 = setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        angle: 60,
+        spread: 65,
+        startVelocity: 60,
+        origin: { x: 0, y: 0.65 },
+        colors: COLORS,
+        zIndex: 9999,
+      });
+      confetti({
+        particleCount: 80,
+        angle: 120,
+        spread: 65,
+        startVelocity: 60,
+        origin: { x: 1, y: 0.65 },
+        colors: COLORS,
+        zIndex: 9999,
+      });
+    }, 250);
+
+    // Second wave from centre — slower, different shapes
+    const t2 = setTimeout(() => {
+      confetti({
+        particleCount: 90,
+        spread: 130,
+        startVelocity: 30,
+        origin: { x: 0.5, y: 0.5 },
+        colors: COLORS,
+        shapes: ["circle"],
+        scalar: 0.85,
+        zIndex: 9999,
+      });
+    }, 550);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      confetti.reset();
+    };
+  }, []);
+
+  return null; // canvas-confetti manages its own canvas
 }
 
 // ─── Recap card ───────────────────────────────────────────────────────────────
@@ -67,10 +81,87 @@ function formatTime(iso: string | null): string {
   });
 }
 
+export function RecapStats({ data }: { data: RecapData }) {
+  // Pick the best numbers to show depending on the worker's role
+  const hasProfessionalStats = data.completedCount > 0;
+  const hasNursingStats = !hasProfessionalStats && (data.nursingCount ?? 0) > 0;
+  const hasRegistrationStats =
+    !hasProfessionalStats && !hasNursingStats && (data.registeredCount ?? 0) > 0;
+
+  if (hasProfessionalStats) {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
+            <p className="text-2xl font-bold tabular-nums">{data.peopleSeen}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {data.peopleSeen === 1 ? "pessoa atendida" : "pessoas atendidas"}
+            </p>
+          </div>
+          <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
+            <p className="text-2xl font-bold tabular-nums">{data.completedCount}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {data.completedCount === 1 ? "atendimento" : "atendimentos"}
+            </p>
+          </div>
+        </div>
+        {data.services.length > 0 && (
+          <div className="space-y-1.5">
+            {data.services.map((s) => (
+              <div key={s.label} className="flex items-center justify-between text-sm">
+                <span className="text-foreground">{s.label}</span>
+                <span className="font-medium tabular-nums">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {(data.startedAt || data.endedAt) && (
+          <p className="text-xs text-muted-foreground text-center">
+            {formatTime(data.startedAt)} — {formatTime(data.endedAt)}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (hasNursingStats) {
+    return (
+      <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
+        <p className="text-2xl font-bold tabular-nums">{data.nursingCount}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {data.nursingCount === 1
+            ? "triagem de enfermagem"
+            : "triagens de enfermagem"}
+        </p>
+      </div>
+    );
+  }
+
+  if (hasRegistrationStats) {
+    return (
+      <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
+        <p className="text-2xl font-bold tabular-nums">{data.registeredCount}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {data.registeredCount === 1
+            ? "pessoa no evento hoje"
+            : "pessoas no evento hoje"}
+        </p>
+      </div>
+    );
+  }
+
+  // No data at all — coordinator / support role
+  return (
+    <p className="text-sm text-muted-foreground text-center py-1">
+      Seu papel foi fundamental para o evento acontecer.
+    </p>
+  );
+}
+
 function RecapCard({ data }: { data: RecapData }) {
   const shareText =
-    `Hoje fui voluntário na ${data.eventName} da Congregação Betel ` +
-    `e ajudei a comunidade com muito amor! 🙏 #AçãoSocial #CongregaçãoBetel`;
+    `Hoje fui voluntário na Ação Social Mãos que Servem da Congregação Betel ` +
+    `e ajudei a comunidade com muito amor! 🙏 #IGREJAUNIDA #MISSÃOCUMPRIDA`;
 
   async function handleShare() {
     if (navigator.share) {
@@ -86,54 +177,16 @@ function RecapCard({ data }: { data: RecapData }) {
   }
 
   return (
-    <div className="bg-background rounded-2xl border border-border shadow-lg p-6 space-y-5 max-w-sm w-full mx-4">
+    <div className="relative z-10 bg-background rounded-2xl border border-border shadow-lg p-6 space-y-5 max-w-sm w-full mx-4">
       <div className="text-center space-y-1">
         <p className="text-3xl">🎉</p>
         <h1 className="text-xl font-bold">Que dia incrível!</h1>
         <p className="text-sm text-muted-foreground">
-          Obrigado pelo seu voluntariado, {data.eventName}.
+          Obrigado pelo seu voluntariado hoje.
         </p>
       </div>
 
-      {data.completedCount > 0 ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-              <p className="text-2xl font-bold tabular-nums">{data.peopleSeen}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {data.peopleSeen === 1 ? "pessoa atendida" : "pessoas atendidas"}
-              </p>
-            </div>
-            <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-              <p className="text-2xl font-bold tabular-nums">{data.completedCount}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {data.completedCount === 1 ? "atendimento" : "atendimentos"}
-              </p>
-            </div>
-          </div>
-
-          {data.services.length > 0 && (
-            <div className="space-y-1.5">
-              {data.services.map((s) => (
-                <div key={s.label} className="flex items-center justify-between text-sm">
-                  <span className="text-foreground">{s.label}</span>
-                  <span className="font-medium tabular-nums">{s.count}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {(data.startedAt || data.endedAt) && (
-            <p className="text-xs text-muted-foreground text-center">
-              {formatTime(data.startedAt)} — {formatTime(data.endedAt)}
-            </p>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground text-center py-2">
-          Seu trabalho foi essencial para o evento acontecer. Obrigado!
-        </p>
-      )}
+      <RecapStats data={data} />
 
       <Button onClick={handleShare} className="w-full" size="sm">
         Compartilhar
@@ -142,7 +195,7 @@ function RecapCard({ data }: { data: RecapData }) {
   );
 }
 
-// ─── Main overlay ─────────────────────────────────────────────────────────────
+// ─── Volunteer overlay (confetti + recap) ─────────────────────────────────────
 
 export function EndOfDayOverlay({ eventId }: { eventId: string }) {
   const [recap, setRecap] = useState<RecapData | null>(null);
@@ -156,24 +209,53 @@ export function EndOfDayOverlay({ eventId }: { eventId: string }) {
   }, [eventId]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center">
+    <>
+      {/* Backdrop — behind confetti canvas (z-9999) */}
+      <div className="fixed inset-0 z-50 bg-background/90" />
       <Confetti />
-      {loading ? (
-        <div className="text-center space-y-3">
-          <p className="text-3xl animate-bounce">🎉</p>
-          <p className="text-sm text-muted-foreground">Carregando resumo…</p>
+      {/* Content — above confetti canvas */}
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          {loading ? (
+            <div className="text-center space-y-3">
+              <p className="text-3xl animate-bounce">🎉</p>
+              <p className="text-sm text-muted-foreground">Carregando resumo…</p>
+            </div>
+          ) : recap ? (
+            <RecapCard data={recap} />
+          ) : (
+            <div className="text-center space-y-3 px-4">
+              <p className="text-3xl">🎉</p>
+              <h1 className="text-xl font-bold">Obrigado pelo seu dia!</h1>
+              <p className="text-sm text-muted-foreground">
+                Que Deus abençoe cada vida tocada hoje!
+              </p>
+            </div>
+          )}
         </div>
-      ) : recap ? (
-        <RecapCard data={recap} />
-      ) : (
-        <div className="text-center space-y-3 px-4">
-          <p className="text-3xl">🎉</p>
-          <h1 className="text-xl font-bold">Evento encerrado!</h1>
-          <p className="text-sm text-muted-foreground">
-            Obrigado por fazer parte deste dia especial. Que Deus abençoe cada vida tocada hoje!
+      </div>
+    </>
+  );
+}
+
+// ─── Admin overlay (confetti only, no recap) ─────────────────────────────────
+
+export function AdminEndOfDayOverlay() {
+  return (
+    <>
+      {/* Backdrop — behind confetti canvas (z-9999) */}
+      <div className="fixed inset-0 z-50 bg-background/90" />
+      <Confetti />
+      {/* Content — above confetti canvas */}
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto text-center space-y-3 px-4 max-w-xs">
+          <p className="text-4xl">🎉</p>
+          <h1 className="text-2xl font-bold">Evento encerrado!</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Que Deus abençoe cada vida tocada hoje. Missão cumprida!
           </p>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

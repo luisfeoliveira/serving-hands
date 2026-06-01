@@ -15,11 +15,11 @@ export async function inviteUser(input: {
 
   // Creates auth user + sends invite email; trigger auto-creates users row with name from metadata
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const { data, error: authError } = await admin.auth.admin.inviteUserByEmail(
+const { data, error: authError } = await admin.auth.admin.inviteUserByEmail(
     input.email,
     {
       data: { name: input.name },
-      redirectTo: `${siteUrl}/auth/callback?type=invite`,
+      redirectTo: `${siteUrl}/auth/confirm`,
     }
   );
   if (authError) return { error: authError.message };

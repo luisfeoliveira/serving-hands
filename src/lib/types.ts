@@ -74,6 +74,8 @@ export interface DbUser {
   service_types: ServiceType[] | null;
   active: boolean;
   medical_specialty: string | null;
+  day_finished_at?: string | null;
+  day_finished_event_id?: string | null;
 }
 
 export interface DbPerson {
