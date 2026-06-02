@@ -131,16 +131,22 @@ export async function getControllerEntries(
 export async function getProfessionalStatuses(
   eventId: string,
   role: UserRole,
-  busyStatus: string
+  busyStatus: string,
+  specialtyFilter?: string
 ): Promise<ProfessionalStatus[]> {
   const admin = createAdminClient();
 
-  const { data: professionals } = await admin
+  let profQuery = admin
     .from("users")
     .select("id, name, role, medical_specialty")
     .eq("role", role)
-    .eq("active", true)
-    .order("name");
+    .eq("active", true);
+
+  if (specialtyFilter) {
+    profQuery = profQuery.eq("medical_specialty", specialtyFilter);
+  }
+
+  const { data: professionals } = await profQuery.order("name");
 
   if (!professionals?.length) return [];
 
@@ -306,7 +312,7 @@ export async function getBeautyEntries(
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
-    .in("service_type", ["cabeleireiro", "estetica"])
+    .in("service_type", ["cabeleireiro_feminino", "cabeleireiro_masculino", "estetica"])
     .eq("status", "in_progress");
 
   if (professionalId) query = query.eq("assigned_to", professionalId);

@@ -175,6 +175,14 @@ function ServiceQueue({
   );
 }
 
+// ─── Beauty service → professional specialty mapping ──────────────────────────
+
+const BEAUTY_PROFESSIONAL_SPECIALTY: Partial<Record<ServiceType, string>> = {
+  cabeleireiro_feminino: "feminino",
+  cabeleireiro_masculino: "masculino",
+  estetica: "estetica",
+};
+
 // ─── Professional picker ──────────────────────────────────────────────────────
 
 const SPECIALTY_LABELS: Record<string, string> = {
@@ -311,6 +319,8 @@ function AssignmentSection({
           busyStatus: config.busyStatus,
         });
         if (patientSpecialtyFilter) params.set("specialtyFilter", patientSpecialtyFilter);
+        const profSpec = BEAUTY_PROFESSIONAL_SPECIALTY[serviceType];
+        if (profSpec) params.set("professionalSpecialty", profSpec);
         const res = await fetch(`/api/queue/controller?${params}`);
         if (!res.ok) return;
         const { queue: freshQueue, professionals: freshProfessionals, avgDurationMin: avg } = await res.json();

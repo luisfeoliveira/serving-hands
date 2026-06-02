@@ -68,7 +68,13 @@ export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> =
     busyStatus: "in_progress",
     waitingStatus: "waiting",
   },
-  cabeleireiro: {
+  cabeleireiro_feminino: {
+    role: "beleza",
+    targetStatus: "in_progress",
+    busyStatus: "in_progress",
+    waitingStatus: "waiting",
+  },
+  cabeleireiro_masculino: {
     role: "beleza",
     targetStatus: "in_progress",
     busyStatus: "in_progress",

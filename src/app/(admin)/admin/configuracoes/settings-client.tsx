@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { saveServiceLimits } from "./actions";
 
 const BEAUTY_SERVICES = [
-  { value: "cabeleireiro", label: "Cabeleireiro" },
-  { value: "estetica",     label: "Estética" },
+  { value: "cabeleireiro_feminino",  label: "Cabeleireiro Feminino" },
+  { value: "cabeleireiro_masculino", label: "Cabeleireiro Masculino" },
+  { value: "estetica",               label: "Estética" },
 ] as const;
 
 interface Props {

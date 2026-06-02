@@ -45,7 +45,8 @@ const CONTROLLER_SERVICES: { value: ServiceType; label: string }[] = [
   { value: "servico_social", label: "Serviço Social" },
   { value: "consultoria_juridica", label: "Consultoria Jurídica" },
   { value: "consultoria_financeira", label: "Consultoria Financeira" },
-  { value: "cabeleireiro", label: "Cabeleireiro" },
+  { value: "cabeleireiro_feminino", label: "Cabeleireiro Feminino" },
+  { value: "cabeleireiro_masculino", label: "Cabeleireiro Masculino" },
   { value: "estetica", label: "Estética" },
 ];
 

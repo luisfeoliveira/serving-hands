@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const role = searchParams.get("role") as UserRole | null;
   const busyStatus = searchParams.get("busyStatus");
   const specialtyFilter = searchParams.get("specialtyFilter") ?? undefined;
+  const professionalSpecialty = searchParams.get("professionalSpecialty") ?? undefined;
 
   if (!eventId || !serviceType || !role || !busyStatus) {
     return Response.json({}, { status: 400 });
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   const [queue, professionals, { data: completedRows }] = await Promise.all([
     getControllerEntries(eventId, serviceType, waitingStatus, specialtyFilter),
-    getProfessionalStatuses(eventId, role, busyStatus),
+    getProfessionalStatuses(eventId, role, busyStatus, professionalSpecialty),
     admin
       .from("service_registrations")
       .select("started_at, completed_at")

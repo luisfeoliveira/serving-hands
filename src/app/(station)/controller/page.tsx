@@ -11,6 +11,13 @@ import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
 import { ControllerClient } from "./controller-client";
 import type { ServiceType, QueueEntry, ProfessionalStatus } from "@/lib/types";
 
+// Beauty service type → professional specialty filter
+const BEAUTY_PROFESSIONAL_SPECIALTY: Partial<Record<ServiceType, string>> = {
+  cabeleireiro_feminino: "feminino",
+  cabeleireiro_masculino: "masculino",
+  estetica: "estetica",
+};
+
 // All medical specialties — used to load full doctor view for admin
 const ALL_MEDICAL_SPECIALTIES = ["clinica_geral", "cardiologia", "pneumologia", "dermatologia"];
 
@@ -84,9 +91,10 @@ export default async function ControllerPage() {
         }
       } else {
         // Single-phase service
+        const profSpecialty = BEAUTY_PROFESSIONAL_SPECIALTY[st];
         queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
         professionalTasks.push(
-          getProfessionalStatuses(event.id, config.role, config.busyStatus).then((s) => [st, s])
+          getProfessionalStatuses(event.id, config.role, config.busyStatus, profSpecialty).then((s) => [st, s])
         );
       }
     } else {
