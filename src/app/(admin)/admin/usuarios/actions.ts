@@ -10,6 +10,7 @@ export async function inviteUser(input: {
   role: UserRole;
   service_types?: ServiceType[] | null;
   medical_specialty?: string | null;
+  medical_specialties?: string[] | null;
 }): Promise<{ error?: string }> {
   const admin = createAdminClient();
 
@@ -34,6 +35,7 @@ const { data, error: authError } = await admin.auth.admin.inviteUserByEmail(
       role: input.role,
       service_types: input.service_types?.length ? input.service_types : null,
       medical_specialty: input.medical_specialty || null,
+      medical_specialties: input.medical_specialties?.length ? input.medical_specialties : null,
       active: true,
     }, { onConflict: "id" });
 
@@ -72,6 +74,7 @@ export async function updateUser(input: {
   active: boolean;
   service_types: ServiceType[] | null;
   medical_specialty: string | null;
+  medical_specialties?: string[] | null;
 }): Promise<{ error?: string }> {
   const admin = createAdminClient();
 
@@ -83,6 +86,7 @@ export async function updateUser(input: {
       active: input.active,
       service_types: input.service_types?.length ? input.service_types : null,
       medical_specialty: input.medical_specialty || null,
+      medical_specialties: input.medical_specialties?.length ? input.medical_specialties : null,
     })
     .eq("id", input.id);
 

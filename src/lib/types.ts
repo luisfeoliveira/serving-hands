@@ -74,6 +74,7 @@ export interface DbUser {
   service_types: ServiceType[] | null;
   active: boolean;
   medical_specialty: string | null;
+  medical_specialties: string[] | null; // multi-specialty for controllers
   day_finished_at?: string | null;
   day_finished_event_id?: string | null;
 }

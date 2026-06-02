@@ -32,8 +32,14 @@ export default async function ControllerPage() {
     profile.role === "admin" && !profile.service_types?.length
       ? allServices
       : ((profile.service_types ?? []) as ServiceType[]);
-  // Controller's own specialty — determines which medicina phase they manage
-  const controllerSpecialty = profile.medical_specialty ?? null;
+
+  // Prefer new medical_specialties array; fall back to legacy single specialty
+  const controllerSpecialties: string[] =
+    profile.medical_specialties?.length
+      ? profile.medical_specialties
+      : profile.medical_specialty
+      ? [profile.medical_specialty]
+      : [];
 
   const queueTasks: Promise<[string, QueueEntry[]]>[] = [];
   const professionalTasks: Promise<[string, ProfessionalStatus[]]>[] = [];
@@ -41,16 +47,18 @@ export default async function ControllerPage() {
   for (const st of serviceTypes) {
     const config = ASSIGNMENT_CONFIG[st];
     if (config) {
-      if (config.secondPhase && controllerSpecialty) {
-        // Specialty controller → only doctor assignment phase, filtered by specialty
-        const key = `${st}:2`;
-        queueTasks.push(
-          getControllerEntries(event.id, st, config.secondPhase.waitingStatus, controllerSpecialty).then((e) => [key, e])
-        );
-        professionalTasks.push(
-          getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus).then((s) => [key, s])
-        );
-      } else if (config.secondPhase && !controllerSpecialty) {
+      if (config.secondPhase && controllerSpecialties.length > 0) {
+        // Doctor controller — one queue + professionals per specialty
+        for (const specialty of controllerSpecialties) {
+          const key = `${st}:${specialty}`;
+          queueTasks.push(
+            getControllerEntries(event.id, st, config.secondPhase.waitingStatus, specialty).then((e) => [key, e])
+          );
+          professionalTasks.push(
+            getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus).then((s) => [key, s])
+          );
+        }
+      } else if (config.secondPhase && controllerSpecialties.length === 0) {
         // Nursing controller → only first phase (nursing triage)
         queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
         professionalTasks.push(
@@ -81,7 +89,7 @@ export default async function ControllerPage() {
     <ControllerClient
       eventId={event.id}
       serviceTypes={serviceTypes}
-      controllerSpecialty={controllerSpecialty}
+      controllerSpecialties={controllerSpecialties}
       initialQueues={queues}
       initialProfessionals={professionalsMap}
     />

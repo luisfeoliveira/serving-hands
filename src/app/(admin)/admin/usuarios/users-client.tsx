@@ -59,16 +59,18 @@ const MEDICAL_SPECIALTIES = [
 
 // ─── Shared specialty logic ───────────────────────────────────────────────────
 
-function showsSpecialty(role: UserRole, serviceTypes: ServiceType[]) {
-  return (
-    role === "medico" ||
-    role === "beleza" ||
-    (role === "controlador" && serviceTypes.includes("medicina"))
-  );
+// Single specialty — medico and beleza
+function showsSpecialty(role: UserRole) {
+  return role === "medico" || role === "beleza";
 }
 
 function isMedicalSpecialty(role: UserRole) {
-  return role === "medico" || role === "controlador";
+  return role === "medico";
+}
+
+// Multi-specialty chips — controller with medicina service
+function showsControllerSpecialties(role: UserRole, serviceTypes: ServiceType[]) {
+  return role === "controlador" && serviceTypes.includes("medicina");
 }
 
 function specialtyLabel(role: UserRole) {
@@ -109,20 +111,54 @@ function ServiceTypeChips({
   );
 }
 
+// ─── Controller specialty chips (multi-select) ────────────────────────────────
+
+function ControllerSpecialtyChips({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  function toggle(v: string) {
+    onChange(selected.includes(v) ? selected.filter((s) => s !== v) : [...selected, v]);
+  }
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">Especialidades médicas (controlador)</Label>
+      <div className="flex flex-wrap gap-1.5">
+        {MEDICAL_SPECIALTIES.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => toggle(s.value)}
+            className={cn(
+              "px-2.5 py-1 text-xs rounded-md border transition-colors",
+              selected.includes(s.value)
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:bg-muted/40 text-foreground"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Specialty field (chips for medico, free text for beleza) ─────────────────
 
 function SpecialtyField({
   role,
-  serviceTypes,
   value,
   onChange,
 }: {
   role: UserRole;
-  serviceTypes: ServiceType[];
   value: string;
   onChange: (v: string) => void;
 }) {
-  if (!showsSpecialty(role, serviceTypes)) return null;
+  if (!showsSpecialty(role)) return null;
 
   return (
     <div className="space-y-1.5">
@@ -166,6 +202,7 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
   const [role, setRole] = useState<UserRole>("recepcao");
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [specialty, setSpecialty] = useState("");
+  const [specialties, setSpecialties] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const showServiceTypes = role === "controlador";
@@ -176,6 +213,7 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
     setRole("recepcao");
     setServiceTypes([]);
     setSpecialty("");
+    setSpecialties([]);
     setOpen(false);
   }
 
@@ -186,7 +224,8 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
         email: email.trim(),
         role,
         service_types: showServiceTypes ? serviceTypes : null,
-        medical_specialty: showsSpecialty(role, serviceTypes) ? specialty || null : null,
+        medical_specialty: showsSpecialty(role) ? specialty || null : null,
+        medical_specialties: showsControllerSpecialties(role, serviceTypes) ? specialties : null,
       });
       if (r.error) {
         toast.error(r.error);
@@ -260,10 +299,13 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
 
       <SpecialtyField
         role={role}
-        serviceTypes={serviceTypes}
         value={specialty}
         onChange={setSpecialty}
       />
+
+      {showsControllerSpecialties(role, serviceTypes) && (
+        <ControllerSpecialtyChips selected={specialties} onChange={setSpecialties} />
+      )}
 
       <p className="text-xs text-muted-foreground">
         O voluntário receberá um e-mail com link para definir a senha.
@@ -302,13 +344,22 @@ function EditForm({
   const [active, setActive] = useState(user.active);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(user.service_types ?? []);
   const [specialty, setSpecialty] = useState(user.medical_specialty ?? "");
+  // For controllers: prefer medical_specialties array; fall back to legacy single specialty
+  const [specialties, setSpecialties] = useState<string[]>(
+    user.medical_specialties?.length
+      ? user.medical_specialties
+      : user.medical_specialty && user.role === "controlador"
+      ? [user.medical_specialty]
+      : []
+  );
   const [isPending, startTransition] = useTransition();
 
   const showServiceTypes = role === "controlador";
 
   function save() {
     startTransition(async () => {
-      const specValue = showsSpecialty(role, serviceTypes) ? specialty || null : null;
+      const specValue = showsSpecialty(role) ? specialty || null : null;
+      const specArray = showsControllerSpecialties(role, serviceTypes) ? specialties : null;
       const r = await updateUser({
         id: user.id,
         name,
@@ -316,6 +367,7 @@ function EditForm({
         active,
         service_types: showServiceTypes ? serviceTypes : null,
         medical_specialty: specValue,
+        medical_specialties: specArray,
       });
       if (r.error) {
         toast.error(r.error);
@@ -328,6 +380,7 @@ function EditForm({
           active,
           service_types: showServiceTypes ? serviceTypes : null,
           medical_specialty: specValue,
+          medical_specialties: specArray,
         });
       }
     });
@@ -348,7 +401,7 @@ function EditForm({
           <Label className="text-xs">Função</Label>
           <Select
             value={role}
-            onValueChange={(v) => { setRole(v as UserRole); setServiceTypes([]); setSpecialty(""); }}
+            onValueChange={(v) => { setRole(v as UserRole); setServiceTypes([]); setSpecialty(""); setSpecialties([]); }}
             itemToStringLabel={(v) => roleLabel(v as UserRole)}
           >
             <SelectTrigger className="h-9 text-sm">
@@ -396,10 +449,13 @@ function EditForm({
 
       <SpecialtyField
         role={role}
-        serviceTypes={serviceTypes}
         value={specialty}
         onChange={setSpecialty}
       />
+
+      {showsControllerSpecialties(role, serviceTypes) && (
+        <ControllerSpecialtyChips selected={specialties} onChange={setSpecialties} />
+      )}
 
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="ghost" size="sm" onClick={onCancel} className="h-8 px-3 text-xs">
@@ -444,13 +500,11 @@ function UserRow({
           <span className="text-xs text-muted-foreground truncate">{user.email}</span>
           <span className="text-xs text-muted-foreground truncate">
             {roleLabel(user.role)}
-            {user.medical_specialty && (
-              <>
-                {" · "}
-                {MEDICAL_SPECIALTIES.find((s) => s.value === user.medical_specialty)?.label ??
-                  user.medical_specialty}
-              </>
-            )}
+            {user.medical_specialties?.length ? (
+              <> · {user.medical_specialties.map((s) => MEDICAL_SPECIALTIES.find((m) => m.value === s)?.label ?? s).join(", ")}</>
+            ) : user.medical_specialty ? (
+              <> · {MEDICAL_SPECIALTIES.find((s) => s.value === user.medical_specialty)?.label ?? user.medical_specialty}</>
+            ) : null}
             {user.service_types?.length ? (
               <> · {user.service_types.length} serviço{user.service_types.length !== 1 ? "s" : ""}</>
             ) : null}

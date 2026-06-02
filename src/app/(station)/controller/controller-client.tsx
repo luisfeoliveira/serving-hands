@@ -480,26 +480,26 @@ function AssignmentSection({
 interface Props {
   eventId: string;
   serviceTypes: ServiceType[];
-  controllerSpecialty: string | null;
+  controllerSpecialties: string[];
   initialQueues: Record<string, QueueEntry[]>;
   initialProfessionals: Record<string, ProfessionalStatus[]>;
 }
 
 /** Returns the label the controller sees for a service.
- *  medicina + no specialty = nursing controller → "Enfermagem"
- *  medicina + specialty   = doctor controller  → "Medicina"
- *  anything else          → normal SERVICE_LABELS value
+ *  medicina + no specialties = nursing controller → "Enfermagem"
+ *  medicina + specialties    = doctor controller  → "Medicina"
+ *  anything else             → normal SERVICE_LABELS value
  */
-function getServiceDisplayLabel(st: ServiceType, controllerSpecialty: string | null): string {
+function getServiceDisplayLabel(st: ServiceType, controllerSpecialties: string[]): string {
   const config = ASSIGNMENT_CONFIG[st];
-  if (config?.secondPhase && !controllerSpecialty) return "Enfermagem";
+  if (config?.secondPhase && controllerSpecialties.length === 0) return "Enfermagem";
   return SERVICE_LABELS[st];
 }
 
 export function ControllerClient({
   eventId,
   serviceTypes,
-  controllerSpecialty,
+  controllerSpecialties,
   initialQueues,
   initialProfessionals,
 }: Props) {
@@ -526,19 +526,49 @@ export function ControllerClient({
     }
 
     if (config.secondPhase) {
-      if (controllerSpecialty) {
-        // Specialty controller → only doctor assignment for their specialty
+      if (controllerSpecialties.length > 0) {
+        // Doctor controller — one section per specialty, tabs when > 1
+        if (controllerSpecialties.length === 1) {
+          const spec = controllerSpecialties[0];
+          return (
+            <AssignmentSection
+              eventId={eventId}
+              serviceType={st}
+              config={config.secondPhase}
+              channelSuffix={`:${spec}`}
+              initialQueue={initialQueues[`${st}:${spec}`] ?? []}
+              initialProfessionals={initialProfessionals[`${st}:${spec}`] ?? []}
+              patientSpecialtyFilter={spec}
+              showHistory={true}
+            />
+          );
+        }
         return (
-          <AssignmentSection
-            eventId={eventId}
-            serviceType={st}
-            config={config.secondPhase}
-            channelSuffix=":2"
-            initialQueue={initialQueues[`${st}:2`] ?? []}
-            initialProfessionals={initialProfessionals[`${st}:2`] ?? []}
-            patientSpecialtyFilter={controllerSpecialty}
-            showHistory={true}
-          />
+          <Tabs defaultValue={controllerSpecialties[0]}>
+            <div className="w-full overflow-x-auto">
+              <TabsList className="min-w-max justify-start">
+                {controllerSpecialties.map((spec) => (
+                  <TabsTrigger key={spec} value={spec} className="flex-none">
+                    {SPECIALTY_LABELS[spec] ?? spec}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            {controllerSpecialties.map((spec) => (
+              <TabsContent key={spec} value={spec} className="mt-4 data-hidden:hidden" keepMounted>
+                <AssignmentSection
+                  eventId={eventId}
+                  serviceType={st}
+                  config={config.secondPhase!}
+                  channelSuffix={`:${spec}`}
+                  initialQueue={initialQueues[`${st}:${spec}`] ?? []}
+                  initialProfessionals={initialProfessionals[`${st}:${spec}`] ?? []}
+                  patientSpecialtyFilter={spec}
+                  showHistory={true}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
         );
       }
       // Nursing controller → only nursing triage phase
@@ -571,7 +601,7 @@ export function ControllerClient({
     return (
       <div className="space-y-4">
         <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {getServiceDisplayLabel(st, controllerSpecialty)}
+          {getServiceDisplayLabel(st, controllerSpecialties)}
         </p>
         {renderService(st)}
       </div>
@@ -584,7 +614,7 @@ export function ControllerClient({
         <TabsList className="min-w-max justify-start">
           {serviceTypes.map((st) => (
             <TabsTrigger key={st} value={st} className="flex-none">
-              {getServiceDisplayLabel(st, controllerSpecialty)}
+              {getServiceDisplayLabel(st, controllerSpecialties)}
             </TabsTrigger>
           ))}
         </TabsList>
