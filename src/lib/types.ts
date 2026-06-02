@@ -65,6 +65,7 @@ export interface DbEvent {
   date: string;
   location: string;
   active: boolean;
+  service_limits: Record<string, number> | null;
 }
 
 export interface DbUser {

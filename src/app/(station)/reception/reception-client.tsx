@@ -42,9 +42,10 @@ type Mode = "idle" | "new" | "existing";
 interface Props {
   eventId: string;
   initialQueueSizes: Record<string, number>;
+  serviceLimits: Record<string, number>;
 }
 
-export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
+export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [queueSizes, setQueueSizes] = useState(initialQueueSizes);
@@ -264,46 +265,57 @@ export function ReceptionClient({ eventId, initialQueueSizes }: Props) {
               {RECEPTION_SERVICES.map((service) => {
                 const alreadyRegistered =
                   mode === "existing" && registeredServices.includes(service);
+                const queueCount = queueSizes[service] ?? 0;
+                const limit = serviceLimits[service];
+                const atCapacity = !alreadyRegistered && limit != null && queueCount >= limit;
+                const disabled = alreadyRegistered || atCapacity;
                 const checked =
                   alreadyRegistered || selectedServices.includes(service);
-                const queueCount = queueSizes[service] ?? 0;
                 const avgMins = avgDurationMins[service];
                 const estimatedWaitMins = avgMins ? Math.round(queueCount * avgMins) : null;
 
                 return (
                   <label
                     key={service}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 border transition-colors cursor-pointer
-                      ${alreadyRegistered ? "opacity-50 cursor-not-allowed border-border bg-muted/30" : "border-border hover:bg-muted/40"}
-                      ${selectedServices.includes(service) && !alreadyRegistered ? "border-foreground bg-muted/40" : ""}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 border transition-colors
+                      ${disabled ? "opacity-50 cursor-not-allowed border-border bg-muted/30" : "border-border hover:bg-muted/40 cursor-pointer"}
+                      ${selectedServices.includes(service) && !disabled ? "border-foreground bg-muted/40" : ""}
                     `}
                   >
                     <Checkbox
                       checked={checked}
-                      disabled={alreadyRegistered}
+                      disabled={disabled}
                       onCheckedChange={() =>
-                        !alreadyRegistered && toggleService(service)
+                        !disabled && toggleService(service)
                       }
                     />
                     <span className="flex-1 text-sm font-medium">
                       {SERVICE_LABELS[service]}
                     </span>
-                    {queueCount > 0 && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge variant="outline" className="text-xs tabular-nums">
-                          {queueCount} na fila
-                        </Badge>
-                        {estimatedWaitMins !== null && estimatedWaitMins > 0 && (
-                          <Badge variant="secondary" className="text-xs tabular-nums text-muted-foreground">
-                            ~{estimatedWaitMins} min
+                    {atCapacity ? (
+                      <Badge variant="destructive" className="text-xs shrink-0">
+                        Cheio
+                      </Badge>
+                    ) : (
+                      <>
+                        {queueCount > 0 && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge variant="outline" className="text-xs tabular-nums">
+                              {limit != null ? `${queueCount}/${limit}` : `${queueCount} na fila`}
+                            </Badge>
+                            {estimatedWaitMins !== null && estimatedWaitMins > 0 && (
+                              <Badge variant="secondary" className="text-xs tabular-nums text-muted-foreground">
+                                ~{estimatedWaitMins} min
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        {alreadyRegistered && (
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            Inscrito
                           </Badge>
                         )}
-                      </div>
-                    )}
-                    {alreadyRegistered && (
-                      <Badge variant="secondary" className="text-xs">
-                        Inscrito
-                      </Badge>
+                      </>
                     )}
                   </label>
                 );

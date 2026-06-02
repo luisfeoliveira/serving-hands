@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, Users, BarChart2, ChevronRight } from "lucide-react";
+import { Menu, X, LayoutGrid, Users, BarChart2, Settings, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATIONS = [
@@ -24,9 +24,10 @@ const STATIONS = [
 ] as const;
 
 const ADMIN_LINKS = [
-  { path: "/admin/estacoes",  label: "Estações",  Icon: LayoutGrid },
-  { path: "/admin/usuarios",  label: "Usuários",  Icon: Users },
-  { path: "/admin/relatorios",label: "Relatórios",Icon: BarChart2 },
+  { path: "/admin/estacoes",      label: "Estações",      Icon: LayoutGrid },
+  { path: "/admin/usuarios",      label: "Usuários",      Icon: Users },
+  { path: "/admin/relatorios",    label: "Relatórios",    Icon: BarChart2 },
+  { path: "/admin/configuracoes", label: "Configurações", Icon: Settings },
 ] as const;
 
 export function AdminNavDrawer() {

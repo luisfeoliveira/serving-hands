@@ -26,6 +26,7 @@ export default async function ReceptionPage() {
     <ReceptionClient
       eventId={event.id}
       initialQueueSizes={queueSizes}
+      serviceLimits={event.service_limits ?? {}}
     />
   );
 }
