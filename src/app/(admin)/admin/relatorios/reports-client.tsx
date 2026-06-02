@@ -58,21 +58,23 @@ function PeakChart({ data }: { data: HourStat[] }) {
   if (!data.length) return <p className="text-sm text-muted-foreground">Sem dados.</p>;
   const max = Math.max(...data.map((d) => d.count), 1);
   return (
-    <div className="flex items-end gap-1 flex-1" style={{ minHeight: "80px" }}>
-      {data.map((d) => (
-        <div key={d.hour} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <div className="w-full flex items-end" style={{ height: "64px" }}>
-            <div
-              className="w-full rounded-t bg-primary/75 transition-all"
-              style={{ height: `${Math.max((d.count / max) * 64, 3)}px` }}
-              title={`${d.count} atendimentos`}
-            />
+    <div className="w-full overflow-x-auto">
+      <div className="flex items-end gap-1 flex-1 min-w-0" style={{ minHeight: "80px", minWidth: `${data.length * 24}px` }}>
+        {data.map((d) => (
+          <div key={d.hour} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+            <div className="w-full flex items-end" style={{ height: "64px" }}>
+              <div
+                className="w-full rounded-t bg-primary/75 transition-all"
+                style={{ height: `${Math.max((d.count / max) * 64, 3)}px` }}
+                title={`${d.count} atendimentos`}
+              />
+            </div>
+            <span className="text-[9px] text-muted-foreground tabular-nums leading-none">
+              {d.hour}
+            </span>
           </div>
-          <span className="text-[9px] text-muted-foreground tabular-nums leading-none">
-            {d.hour}
-          </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -134,9 +136,9 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
   return (
     <div className="space-y-5">
       {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">{eventName}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold truncate">{eventName}</h2>
           <p className="text-xs text-muted-foreground">
             Atualizado às{" "}
             {lastRefreshed.toLocaleTimeString("pt-BR", {
@@ -157,7 +159,7 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
       </div>
 
       {/* Top KPI row — 4 big numbers */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card title="Pessoas registradas">
           <p className="text-4xl font-bold tabular-nums">{data.totalPeople}</p>
         </Card>
@@ -169,18 +171,18 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
         </Card>
 
         <Card title="Total arrecadado (bazar)">
-          <p className="text-4xl font-bold tabular-nums">
+          <p className="text-3xl font-bold tabular-nums break-all">
             {fmtR(data.bazaarRevenue.total)}
           </p>
           {data.bazaarRevenue.total > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground break-words">
               Dinheiro {fmtR(data.bazaarRevenue.cash)} · PIX {fmtR(data.bazaarRevenue.pix)}
             </p>
           )}
         </Card>
 
         <Card title="Média de peças / sacola (bazar)">
-          <p className="text-4xl font-bold tabular-nums">
+          <p className="text-4xl font-bold tabular-nums break-all">
             {data.bazaarAvgItems != null ? data.bazaarAvgItems.toFixed(1) : "—"}
           </p>
         </Card>

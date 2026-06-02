@@ -8,6 +8,7 @@ import { Hashtag } from "@/components/hashtag";
 import { FinishDayButton } from "@/components/finish-day-button";
 import { DayFinishedScreen } from "@/components/day-finished-screen";
 import { AdminNavDrawer } from "@/components/admin-nav-drawer";
+import { StationMobileMenu } from "@/components/station-mobile-menu";
 
 export default async function StationLayout({
   children,
@@ -38,21 +39,45 @@ export default async function StationLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Non-admin volunteers can end their own day early */}
-            {profile.role !== "admin" && event && (
-              <FinishDayButton eventId={event.id} />
+            {profile.role === "admin" ? (
+              /* Admin: AdminNavDrawer handles navigation; just show Sair inline */
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sair
+                </button>
+              </form>
+            ) : (
+              <>
+                {/* Volunteers mobile: hamburger with name + finish day + sair */}
+                <StationMobileMenu
+                  name={profile.name}
+                  roleName={roleLabel(profile.role)}
+                  showFinishDay={!!event}
+                  eventId={event?.id ?? ""}
+                  signOut={signOut}
+                />
+                {/* Volunteers desktop: inline controls */}
+                {event && (
+                  <div className="hidden sm:block">
+                    <FinishDayButton eventId={event.id} />
+                  </div>
+                )}
+                <span className="text-sm text-muted-foreground hidden sm:block">
+                  {profile.name}
+                </span>
+                <form action={signOut} className="hidden sm:block">
+                  <button
+                    type="submit"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Sair
+                  </button>
+                </form>
+              </>
             )}
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              {profile.name}
-            </span>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sair
-              </button>
-            </form>
           </div>
         </header>
 

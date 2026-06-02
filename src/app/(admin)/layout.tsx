@@ -15,8 +15,9 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
+        {/* Top bar: title + user controls */}
+        <div className="px-4 py-3 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               Ação Social IV
@@ -25,41 +26,50 @@ export default async function AdminLayout({
               {roleLabel(profile.role)}
             </h1>
           </div>
-          <nav className="flex items-center gap-1">
+          <div className="flex items-center gap-4">
+            {event && <CloseEventButton eventId={event.id} />}
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              {profile.name}
+            </span>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Sair
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Nav row: scrollable on mobile */}
+        <div className="overflow-x-auto border-t border-border/40">
+          <nav className="flex items-center gap-1 px-3 py-1.5 min-w-max">
             <Link
               href="/admin/relatorios"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
             >
               Relatórios
             </Link>
             <Link
               href="/admin/usuarios"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
             >
               Voluntários
             </Link>
             <Link
               href="/admin/estacoes"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
             >
               Estações
             </Link>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {event && <CloseEventButton eventId={event.id} />}
-          <span className="text-sm text-muted-foreground hidden sm:block">
-            {profile.name}
-          </span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            <Link
+              href="/admin/configuracoes"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
             >
-              Sair
-            </button>
-          </form>
+              Configurações
+            </Link>
+          </nav>
         </div>
       </header>
 
