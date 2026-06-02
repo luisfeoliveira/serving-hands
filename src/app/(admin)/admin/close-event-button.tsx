@@ -28,7 +28,7 @@ export function CloseEventButton({ eventId }: { eventId: string }) {
       {step === "idle" && (
         <button
           onClick={() => setStep("confirm")}
-          className="text-xs text-muted-foreground/40 hover:text-destructive transition-colors"
+          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
         >
           Encerrar evento
         </button>

@@ -5,12 +5,10 @@ import { listUsers } from "./actions";
 import { UsersClient } from "./users-client";
 
 export default async function UsuariosPage() {
-  const profile = await requireProfile();
+  const [profile, users] = await Promise.all([requireProfile(), listUsers()]);
   if (profile.role !== "admin") {
     redirect(roleToPath(profile.role));
   }
-
-  const users = await listUsers();
 
   return <UsersClient initialUsers={users} />;
 }
