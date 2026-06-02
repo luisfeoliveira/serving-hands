@@ -46,7 +46,6 @@ const CONTROLLER_SERVICES: { value: ServiceType; label: string }[] = [
   { value: "consultoria_juridica", label: "Consultoria Jurídica" },
   { value: "consultoria_financeira", label: "Consultoria Financeira" },
   { value: "cabeleireiro", label: "Cabeleireiro" },
-  { value: "sobrancelha", label: "Design de Sobrancelha" },
   { value: "estetica", label: "Estética" },
 ];
 
@@ -55,6 +54,12 @@ const MEDICAL_SPECIALTIES = [
   { value: "cardiologia", label: "Cardiologia" },
   { value: "pneumologia", label: "Pneumologia" },
   { value: "dermatologia", label: "Dermatologia" },
+];
+
+const BEAUTY_SPECIALTIES = [
+  { value: "feminino", label: "Feminino" },
+  { value: "masculino", label: "Masculino" },
+  { value: "estetica", label: "Estética" },
 ];
 
 // ─── Shared specialty logic ───────────────────────────────────────────────────
@@ -74,7 +79,7 @@ function showsControllerSpecialties(role: UserRole, serviceTypes: ServiceType[])
 }
 
 function specialtyLabel(role: UserRole) {
-  if (role === "beleza") return "Tipo / Especialidade (ex: Feminino, Masculino)";
+  if (role === "beleza") return "Especialidade";
   return "Especialidade médica";
 }
 
@@ -147,7 +152,7 @@ function ControllerSpecialtyChips({
   );
 }
 
-// ─── Specialty field (chips for medico, free text for beleza) ─────────────────
+// ─── Specialty field (chips for medico and beleza) ────────────────────────────
 
 function SpecialtyField({
   role,
@@ -160,35 +165,28 @@ function SpecialtyField({
 }) {
   if (!showsSpecialty(role)) return null;
 
+  const options = role === "beleza" ? BEAUTY_SPECIALTIES : MEDICAL_SPECIALTIES;
+
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{specialtyLabel(role)}</Label>
-      {isMedicalSpecialty(role) ? (
-        <div className="flex flex-wrap gap-1.5">
-          {MEDICAL_SPECIALTIES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => onChange(value === s.value ? "" : s.value)}
-              className={cn(
-                "px-2.5 py-1 text-xs rounded-md border transition-colors",
-                value === s.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border hover:bg-muted/40 text-foreground"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="ex: Feminino, Masculino, Infantil…"
-          className="h-9 text-sm max-w-xs"
-        />
-      )}
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => onChange(value === s.value ? "" : s.value)}
+            className={cn(
+              "px-2.5 py-1 text-xs rounded-md border transition-colors",
+              value === s.value
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:bg-muted/40 text-foreground"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

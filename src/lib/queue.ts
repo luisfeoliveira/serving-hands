@@ -295,7 +295,7 @@ export async function getBazaarBrowsingEntries(
   return data.map(mapRow);
 }
 
-// ─── Beauty professional: sobrancelha + estetica combined ────────────────────
+// ─── Beauty professional: cabeleireiro + estetica combined ───────────────────
 
 export async function getBeautyEntries(
   eventId: string,
@@ -306,7 +306,7 @@ export async function getBeautyEntries(
     .from("service_registrations")
     .select("*, person:people(*)")
     .eq("event_id", eventId)
-    .in("service_type", ["cabeleireiro", "sobrancelha", "estetica"])
+    .in("service_type", ["cabeleireiro", "estetica"])
     .eq("status", "in_progress");
 
   if (professionalId) query = query.eq("assigned_to", professionalId);

@@ -12,14 +12,12 @@ import type { QueueEntry, ServiceType } from "@/lib/types";
 // ─── Service label badge ──────────────────────────────────────────────────────
 
 const SERVICE_LABELS: Partial<Record<ServiceType, string>> = {
-  cabeleireiro: "Cabelereiro",
-  sobrancelha: "Design de Sobrancelha",
+  cabeleireiro: "Cabeleireiro",
   estetica: "Estética",
 };
 
 const SERVICE_COLORS: Partial<Record<ServiceType, string>> = {
   cabeleireiro: "bg-amber-100 text-amber-700 border-amber-200",
-  sobrancelha: "bg-pink-100 text-pink-700 border-pink-200",
   estetica: "bg-purple-100 text-purple-700 border-purple-200",
 };
 

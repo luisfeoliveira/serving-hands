@@ -24,7 +24,6 @@ const RECEPTION_SERVICES: ServiceType[] = [
   "consultoria_juridica",
   "consultoria_financeira",
   "cabeleireiro",
-  "sobrancelha",
   "estetica",
   "bazar",
 ];

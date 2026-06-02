@@ -72,6 +72,10 @@ function TriageCard({
       setVitals((prev) => ({ ...prev, [field]: e.target.value }));
 
   function submit(action: "dispense" | "forward") {
+    if (action === "forward" && !specialty) {
+      toast.error("Selecione a especialidade antes de encaminhar ao médico.");
+      return;
+    }
     startTransition(async () => {
       const r = await submitTriage({
         entryId: entry.id,

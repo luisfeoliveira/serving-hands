@@ -38,7 +38,7 @@ export function useBeautyQueue(
           const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
           if (row?.event_id && row.event_id !== eventId) return;
           const st = row?.service_type as string | undefined;
-          if (st && st !== "cabeleireiro" && st !== "sobrancelha" && st !== "estetica") return;
+          if (st && st !== "cabeleireiro" && st !== "estetica") return;
 
           if (debounceTimer.current) clearTimeout(debounceTimer.current);
           debounceTimer.current = setTimeout(() => refresh(), 200);

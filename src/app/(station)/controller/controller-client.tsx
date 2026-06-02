@@ -182,6 +182,9 @@ const SPECIALTY_LABELS: Record<string, string> = {
   cardiologia: "Cardiologia",
   pneumologia: "Pneumologia",
   dermatologia: "Dermatologia",
+  feminino:     "Feminino",
+  masculino:    "Masculino",
+  estetica:     "Estética",
 };
 
 /** "Médico · Cardiologia", "Cabeleireira · Feminino", "Odontólogo" */

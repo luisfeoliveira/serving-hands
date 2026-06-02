@@ -74,12 +74,6 @@ export const ASSIGNMENT_CONFIG: Partial<Record<ServiceType, AssignmentConfig>> =
     busyStatus: "in_progress",
     waitingStatus: "waiting",
   },
-  sobrancelha: {
-    role: "beleza",
-    targetStatus: "in_progress",
-    busyStatus: "in_progress",
-    waitingStatus: "waiting",
-  },
   estetica: {
     role: "beleza",
     targetStatus: "in_progress",

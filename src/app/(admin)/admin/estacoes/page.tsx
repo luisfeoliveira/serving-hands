@@ -14,7 +14,7 @@ const STATIONS = [
   { href: "/social-work",       label: "Serviço Social",        description: "Atendimento de assistência social" },
   { href: "/legal",             label: "Consultoria Jurídica",  description: "Atendimento jurídico" },
   { href: "/finance",           label: "Consultoria Financeira",description: "Atendimento financeiro" },
-  { href: "/beauty",            label: "Beleza",                description: "Cabeleireiro, sobrancelha e estética" },
+  { href: "/beauty",            label: "Beleza",                description: "Cabeleireiro e estética" },
   { href: "/bazaar/controller", label: "Controlador do Bazar",  description: "Entrada de pessoas no bazar" },
   { href: "/bazaar/cashier",    label: "Caixa do Bazar",        description: "Registro de vendas" },
 ];
