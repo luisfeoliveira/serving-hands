@@ -485,6 +485,17 @@ interface Props {
   initialProfessionals: Record<string, ProfessionalStatus[]>;
 }
 
+/** Returns the label the controller sees for a service.
+ *  medicina + no specialty = nursing controller → "Enfermagem"
+ *  medicina + specialty   = doctor controller  → "Medicina"
+ *  anything else          → normal SERVICE_LABELS value
+ */
+function getServiceDisplayLabel(st: ServiceType, controllerSpecialty: string | null): string {
+  const config = ASSIGNMENT_CONFIG[st];
+  if (config?.secondPhase && !controllerSpecialty) return "Enfermagem";
+  return SERVICE_LABELS[st];
+}
+
 export function ControllerClient({
   eventId,
   serviceTypes,
@@ -560,7 +571,7 @@ export function ControllerClient({
     return (
       <div className="space-y-4">
         <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {SERVICE_LABELS[st]}
+          {getServiceDisplayLabel(st, controllerSpecialty)}
         </p>
         {renderService(st)}
       </div>
@@ -573,7 +584,7 @@ export function ControllerClient({
         <TabsList className="min-w-max justify-start">
           {serviceTypes.map((st) => (
             <TabsTrigger key={st} value={st} className="flex-none">
-              {SERVICE_LABELS[st]}
+              {getServiceDisplayLabel(st, controllerSpecialty)}
             </TabsTrigger>
           ))}
         </TabsList>

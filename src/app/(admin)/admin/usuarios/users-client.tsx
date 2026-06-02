@@ -38,7 +38,7 @@ const ALL_ROLES: UserRole[] = [
 ];
 
 const CONTROLLER_SERVICES: { value: ServiceType; label: string }[] = [
-  { value: "medicina", label: "Medicina" },
+  { value: "medicina", label: "Medicina / Enfermagem" },
   { value: "odontologia", label: "Odontologia" },
   { value: "fonoaudiologia", label: "Fonoaudiologia" },
   { value: "psicologia", label: "Psicologia" },
