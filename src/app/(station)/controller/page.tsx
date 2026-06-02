@@ -11,6 +11,9 @@ import { ASSIGNMENT_CONFIG } from "@/lib/service-config";
 import { ControllerClient } from "./controller-client";
 import type { ServiceType, QueueEntry, ProfessionalStatus } from "@/lib/types";
 
+// All medical specialties — used to load full doctor view for admin
+const ALL_MEDICAL_SPECIALTIES = ["clinica_geral", "cardiologia", "pneumologia", "dermatologia"];
+
 export default async function ControllerPage() {
   const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
 
@@ -26,10 +29,12 @@ export default async function ControllerPage() {
     );
   }
 
+  const isAdmin = profile.role === "admin";
+
   // Admin with no service_types sees all assignable services
   const allServices = Object.keys(ASSIGNMENT_CONFIG) as ServiceType[];
   const serviceTypes =
-    profile.role === "admin" && !profile.service_types?.length
+    isAdmin && !profile.service_types?.length
       ? allServices
       : ((profile.service_types ?? []) as ServiceType[]);
 
@@ -59,11 +64,24 @@ export default async function ControllerPage() {
           );
         }
       } else if (config.secondPhase && controllerSpecialties.length === 0) {
-        // Nursing controller → only first phase (nursing triage)
+        // Nursing controller (or admin) → always load nursing phase
         queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
         professionalTasks.push(
           getProfessionalStatuses(event.id, config.role, config.busyStatus).then((s) => [st, s])
         );
+
+        // Admin: also load doctor phase for all specialties
+        if (isAdmin && config.secondPhase) {
+          for (const specialty of ALL_MEDICAL_SPECIALTIES) {
+            const key = `${st}:${specialty}`;
+            queueTasks.push(
+              getControllerEntries(event.id, st, config.secondPhase.waitingStatus, specialty).then((e) => [key, e])
+            );
+            professionalTasks.push(
+              getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus).then((s) => [key, s])
+            );
+          }
+        }
       } else {
         // Single-phase service
         queueTasks.push(getControllerEntries(event.id, st).then((e) => [st, e]));
@@ -90,6 +108,7 @@ export default async function ControllerPage() {
       eventId={event.id}
       serviceTypes={serviceTypes}
       controllerSpecialties={controllerSpecialties}
+      isAdmin={isAdmin}
       initialQueues={queues}
       initialProfessionals={professionalsMap}
     />

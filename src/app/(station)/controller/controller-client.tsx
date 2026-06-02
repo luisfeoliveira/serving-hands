@@ -477,22 +477,30 @@ function AssignmentSection({
 
 // ─── Main client ──────────────────────────────────────────────────────────────
 
+// All medical specialties shown to admin in doctor phase
+const ALL_MEDICAL_SPECIALTIES = [
+  { value: "clinica_geral",  label: "Clínica Geral" },
+  { value: "cardiologia",    label: "Cardiologia" },
+  { value: "pneumologia",    label: "Pneumologia" },
+  { value: "dermatologia",   label: "Dermatologia" },
+];
+
 interface Props {
   eventId: string;
   serviceTypes: ServiceType[];
   controllerSpecialties: string[];
+  isAdmin?: boolean;
   initialQueues: Record<string, QueueEntry[]>;
   initialProfessionals: Record<string, ProfessionalStatus[]>;
 }
 
 /** Returns the label the controller sees for a service.
- *  medicina + no specialties = nursing controller → "Enfermagem"
- *  medicina + specialties    = doctor controller  → "Medicina"
- *  anything else             → normal SERVICE_LABELS value
+ *  medicina + no specialties + not admin = nursing controller → "Enfermagem"
+ *  otherwise → normal SERVICE_LABELS value
  */
-function getServiceDisplayLabel(st: ServiceType, controllerSpecialties: string[]): string {
+function getServiceDisplayLabel(st: ServiceType, controllerSpecialties: string[], isAdmin: boolean): string {
   const config = ASSIGNMENT_CONFIG[st];
-  if (config?.secondPhase && controllerSpecialties.length === 0) return "Enfermagem";
+  if (config?.secondPhase && controllerSpecialties.length === 0 && !isAdmin) return "Enfermagem";
   return SERVICE_LABELS[st];
 }
 
@@ -500,6 +508,7 @@ export function ControllerClient({
   eventId,
   serviceTypes,
   controllerSpecialties,
+  isAdmin = false,
   initialQueues,
   initialProfessionals,
 }: Props) {
@@ -526,6 +535,60 @@ export function ControllerClient({
     }
 
     if (config.secondPhase) {
+      // Admin: show both nursing and doctor phases
+      if (isAdmin && controllerSpecialties.length === 0) {
+        return (
+          <div className="space-y-8">
+            {/* Nursing phase */}
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-1">
+                Enfermagem
+              </p>
+              <AssignmentSection
+                eventId={eventId}
+                serviceType={st}
+                config={config}
+                channelSuffix=""
+                initialQueue={initialQueues[st] ?? []}
+                initialProfessionals={initialProfessionals[st] ?? []}
+                showHistory={false}
+              />
+            </div>
+            {/* Doctor phase — tabs per specialty */}
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-1">
+                Médico
+              </p>
+              <Tabs defaultValue={ALL_MEDICAL_SPECIALTIES[0].value}>
+                <div className="w-full overflow-x-auto">
+                  <TabsList className="min-w-max justify-start">
+                    {ALL_MEDICAL_SPECIALTIES.map((spec) => (
+                      <TabsTrigger key={spec.value} value={spec.value} className="flex-none">
+                        {spec.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+                {ALL_MEDICAL_SPECIALTIES.map((spec) => (
+                  <TabsContent key={spec.value} value={spec.value} className="mt-4 data-hidden:hidden" keepMounted>
+                    <AssignmentSection
+                      eventId={eventId}
+                      serviceType={st}
+                      config={config.secondPhase!}
+                      channelSuffix={`:${spec.value}`}
+                      initialQueue={initialQueues[`${st}:${spec.value}`] ?? []}
+                      initialProfessionals={initialProfessionals[`${st}:${spec.value}`] ?? []}
+                      patientSpecialtyFilter={spec.value}
+                      showHistory={true}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </div>
+          </div>
+        );
+      }
+
       if (controllerSpecialties.length > 0) {
         // Doctor controller — one section per specialty, tabs when > 1
         if (controllerSpecialties.length === 1) {
@@ -601,7 +664,7 @@ export function ControllerClient({
     return (
       <div className="space-y-4">
         <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {getServiceDisplayLabel(st, controllerSpecialties)}
+          {getServiceDisplayLabel(st, controllerSpecialties, isAdmin)}
         </p>
         {renderService(st)}
       </div>
@@ -614,7 +677,7 @@ export function ControllerClient({
         <TabsList className="min-w-max justify-start">
           {serviceTypes.map((st) => (
             <TabsTrigger key={st} value={st} className="flex-none">
-              {getServiceDisplayLabel(st, controllerSpecialties)}
+              {getServiceDisplayLabel(st, controllerSpecialties, isAdmin)}
             </TabsTrigger>
           ))}
         </TabsList>
