@@ -158,8 +158,8 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
         </Button>
       </div>
 
-      {/* Top KPI row — 4 big numbers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top KPI row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card title="Pessoas registradas">
           <p className="text-4xl font-bold tabular-nums">{data.totalPeople}</p>
         </Card>
@@ -170,6 +170,13 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
           </p>
         </Card>
 
+        <Card title="Cestas básicas distribuídas">
+          <p className="text-4xl font-bold tabular-nums">{data.cestaBasicaCount}</p>
+        </Card>
+      </div>
+
+      {/* Bazar KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card title="Total arrecadado (bazar)">
           <p className="text-3xl font-bold tabular-nums break-all">
             {fmtR(data.bazaarRevenue.total)}

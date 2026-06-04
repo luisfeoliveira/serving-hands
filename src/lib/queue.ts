@@ -325,6 +325,26 @@ export async function getBeautyEntries(
   return data.map(mapRow);
 }
 
+// ─── Forwarded social work entries (psicologia → servico_social, unclaimed) ───
+
+export async function getForwardedSocialWorkEntries(
+  eventId: string
+): Promise<QueueEntry[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("service_registrations")
+    .select("*, person:people(*)")
+    .eq("event_id", eventId)
+    .eq("service_type", "servico_social")
+    .eq("forwarded_from", "psicologia")
+    .eq("status", "waiting")
+    .order("priority", { ascending: false })
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(mapRow);
+}
+
 // ─── Abandon ──────────────────────────────────────────────────────────────────
 
 export async function abandonEntry(entryId: string): Promise<{ error?: string }> {

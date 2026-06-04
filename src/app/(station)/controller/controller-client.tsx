@@ -12,7 +12,8 @@ import { AbandonButton } from "@/components/queue/abandon-button";
 import { createClient } from "@/lib/supabase/client";
 import { getCompletedEntries } from "@/lib/queue";
 import { ASSIGNMENT_CONFIG, type AssignmentConfig } from "@/lib/service-config";
-import { assignToProfessional, callEntry, completeEntry } from "./actions";
+import { Input } from "@/components/ui/input";
+import { assignToProfessional, callEntry, completeEntry, searchEventPeople, addPersonToSocialWorkQueue } from "./actions";
 import { SERVICE_LABELS } from "@/lib/types";
 import { roleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -278,6 +279,91 @@ function ProfessionalPicker({
   );
 }
 
+// ─── Direct add to social work queue ─────────────────────────────────────────
+
+function DirectAddSection({ eventId, onAdded }: { eventId: string; onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string; age: number }[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const [isSearching, startSearchTransition] = useTransition();
+
+  function handleSearch(q: string) {
+    setQuery(q);
+    if (!q.trim()) { setResults([]); return; }
+    startSearchTransition(async () => {
+      const found = await searchEventPeople(eventId, q);
+      setResults(found);
+    });
+  }
+
+  function handleAdd(personId: string) {
+    startTransition(async () => {
+      const r = await addPersonToSocialWorkQueue(personId, eventId);
+      if (r.error) toast.error(r.error);
+      else {
+        toast.success("Pessoa adicionada à fila.");
+        setOpen(false);
+        setQuery("");
+        setResults([]);
+        onAdded();
+      }
+    });
+  }
+
+  if (!open) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="h-8 px-3 text-xs w-full"
+      >
+        + Adicionar pessoa à fila
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Adicionar à fila
+        </p>
+        <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setQuery(""); setResults([]); }} className="h-6 text-xs">
+          Cancelar
+        </Button>
+      </div>
+      <Input
+        value={query}
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="Nome ou CPF…"
+        className="h-8 text-sm"
+        autoFocus
+      />
+      {isSearching && <p className="text-xs text-muted-foreground">Buscando…</p>}
+      {!isSearching && query.trim() && results.length === 0 && (
+        <p className="text-xs text-muted-foreground">Nenhuma pessoa encontrada.</p>
+      )}
+      {results.length > 0 && (
+        <div className="space-y-1.5">
+          {results.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => handleAdd(p.id)}
+              disabled={isPending}
+              className="w-full text-left rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50 flex items-center justify-between gap-2"
+            >
+              <span className="font-medium">{p.name}</span>
+              <span className="text-xs text-muted-foreground">{p.age} anos</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Assignment-based controller section ─────────────────────────────────────
 
 function AssignmentSection({
@@ -482,6 +568,10 @@ function AssignmentSection({
           })
         )}
       </div>
+
+      {serviceType === "servico_social" && (
+        <DirectAddSection eventId={eventId} onAdded={refresh} />
+      )}
 
       {showHistory && <HistorySection eventId={eventId} serviceType={serviceType} />}
     </div>

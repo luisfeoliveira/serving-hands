@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { roleToPath } from "@/lib/roles";
 import { getActiveEvent } from "@/lib/event";
-import { getProfessionalEntries } from "@/lib/queue";
-import { ProfessionalClient } from "@/components/professional/professional-client";
+import { getProfessionalEntries, getForwardedSocialWorkEntries } from "@/lib/queue";
+import { SocialWorkClient } from "./social-work-client";
 
 export default async function SocialWorkPage() {
   const [profile, event] = await Promise.all([requireProfile(), getActiveEvent()]);
@@ -19,14 +19,19 @@ export default async function SocialWorkPage() {
     );
   }
 
-  const initialEntries = await getProfessionalEntries(event.id, "servico_social", profile.role === "admin" ? null : profile.id);
+  const professionalId = profile.role === "admin" ? null : profile.id;
+
+  const [initialEntries, initialForwardedEntries] = await Promise.all([
+    getProfessionalEntries(event.id, "servico_social", professionalId),
+    getForwardedSocialWorkEntries(event.id),
+  ]);
 
   return (
-    <ProfessionalClient
+    <SocialWorkClient
       eventId={event.id}
-      serviceType="servico_social"
-      professionalId={profile.role === "admin" ? null : profile.id}
+      professionalId={professionalId}
       initialEntries={initialEntries}
+      initialForwardedEntries={initialForwardedEntries}
     />
   );
 }

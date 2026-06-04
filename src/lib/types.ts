@@ -107,6 +107,8 @@ export interface DbServiceRegistration {
   started_by: string | null;
   completed_by: string | null;
   assigned_to: string | null;
+  forwarded_from: string | null;
+  cesta_basica: boolean;
 }
 
 export interface ProfessionalStatus {

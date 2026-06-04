@@ -15,7 +15,8 @@ import {
 import { useProfessionalQueue } from "@/hooks/use-professional-queue";
 import { PriorityBadge } from "@/components/queue/priority-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
-import { startAttendance, completeAppointment } from "@/lib/professional-actions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { startAttendance, completeAppointment, forwardToSocialService } from "@/lib/professional-actions";
 import type {
   ServiceType,
   QueueEntry,
@@ -41,10 +42,16 @@ function ClinicalForm({
   form,
   set,
   onEvent,
+  showCestaBasica,
+  cestaBasica,
+  onCestaBasicaChange,
 }: {
   form: FormState;
   set: Setter;
   onEvent: EventSetter;
+  showCestaBasica?: boolean;
+  cestaBasica?: boolean;
+  onCestaBasicaChange?: (v: boolean) => void;
 }) {
   return (
     <>
@@ -86,6 +93,18 @@ function ClinicalForm({
           />
         )}
       </div>
+      {showCestaBasica && (
+        <div className="flex items-center gap-2 pt-1">
+          <Checkbox
+            id="cesta-basica"
+            checked={cestaBasica ?? false}
+            onCheckedChange={(v) => onCestaBasicaChange?.(v === true)}
+          />
+          <Label htmlFor="cesta-basica" className="text-xs cursor-pointer">
+            Recebeu cesta básica
+          </Label>
+        </div>
+      )}
     </>
   );
 }
@@ -177,18 +196,32 @@ function AppointmentForm({
   form,
   set,
   onEvent,
+  cestaBasica,
+  onCestaBasicaChange,
 }: {
   serviceType: ServiceType;
   form: FormState;
   set: Setter;
   onEvent: EventSetter;
+  cestaBasica?: boolean;
+  onCestaBasicaChange?: (v: boolean) => void;
 }) {
   switch (serviceType) {
     case "odontologia":
     case "fonoaudiologia":
     case "psicologia":
-    case "servico_social":
       return <ClinicalForm form={form} set={set} onEvent={onEvent} />;
+    case "servico_social":
+      return (
+        <ClinicalForm
+          form={form}
+          set={set}
+          onEvent={onEvent}
+          showCestaBasica
+          cestaBasica={cestaBasica}
+          onCestaBasicaChange={onCestaBasicaChange}
+        />
+      );
     case "consultoria_juridica":
       return <LegalForm form={form} set={set} onEvent={onEvent} />;
     case "consultoria_financeira":
@@ -269,6 +302,7 @@ function AppointmentCard({
 }) {
   const [started, setStarted] = useState(!!entry.started_at);
   const [form, setForm] = useState<FormState>({});
+  const [cestaBasica, setCestaBasica] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const set: Setter = (key) => (value) =>
@@ -285,6 +319,14 @@ function AppointmentCard({
     });
   }
 
+  function handleForward() {
+    startTransition(async () => {
+      const r = await forwardToSocialService(entry.id);
+      if (r.error) toast.error(r.error);
+      else toast.success("Pessoa encaminhada para o Serviço Social.");
+    });
+  }
+
   function submit() {
     const data = buildAppointmentData(serviceType, form);
     if (!data) {
@@ -292,7 +334,11 @@ function AppointmentCard({
       return;
     }
     startTransition(async () => {
-      const r = await completeAppointment({ entryId: entry.id, data });
+      const r = await completeAppointment({
+        entryId: entry.id,
+        data,
+        cestaBasica: serviceType === "servico_social" ? cestaBasica : undefined,
+      });
       if (r.error) toast.error(r.error);
       else {
         toast.success("Atendimento concluído.");
@@ -335,11 +381,24 @@ function AppointmentCard({
           form={form}
           set={set}
           onEvent={onEvent}
+          cestaBasica={cestaBasica}
+          onCestaBasicaChange={setCestaBasica}
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
+      <div className="flex flex-wrap justify-end gap-2 pt-1 border-t border-border/50">
         <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
+        {serviceType === "psicologia" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleForward}
+            disabled={isPending}
+            className="h-8 px-3 text-xs"
+          >
+            {isPending ? "…" : "Encaminhar para Serviço Social"}
+          </Button>
+        )}
         <Button
           size="sm"
           onClick={submit}

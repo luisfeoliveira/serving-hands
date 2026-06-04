@@ -30,6 +30,7 @@ export interface ReportsData {
   bazaarRevenue: { cash: number; pix: number; total: number };
   ageDistribution: AgeStat[];
   avgAge: number | null;
+  cestaBasicaCount: number;
 }
 
 function ageGroup(age: number): string {
@@ -50,6 +51,7 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     { data: people },
     { data: registrations },
     { data: bazaarTx },
+    { count: cestaBasicaCount },
   ] = await Promise.all([
     admin.from("people").select("id, age").eq("event_id", eventId),
     admin
@@ -60,6 +62,11 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
       .from("bazar_transactions")
       .select("item_count, amount, payment_method")
       .eq("event_id", eventId),
+    admin
+      .from("service_registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .eq("cesta_basica", true),
   ]);
 
   const regs = registrations ?? [];
@@ -184,5 +191,6 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     bazaarRevenue,
     ageDistribution,
     avgAge,
+    cestaBasicaCount: cestaBasicaCount ?? 0,
   };
 }
