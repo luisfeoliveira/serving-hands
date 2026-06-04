@@ -58,6 +58,18 @@ export default async function AdminLayout({
               Voluntários
             </Link>
             <Link
+              href="/admin/collaborators"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+            >
+              Facilitadores
+            </Link>
+            <Link
+              href="/admin/expenses"
+              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+            >
+              Gastos
+            </Link>
+            <Link
               href="/admin/estacoes"
               className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
             >

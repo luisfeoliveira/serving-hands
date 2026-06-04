@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, Users, BarChart2, Settings, ChevronRight } from "lucide-react";
+import { Menu, X, LayoutGrid, Users, BarChart2, Settings, ChevronRight, UsersRound, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATIONS = [
@@ -21,13 +21,16 @@ const STATIONS = [
   { path: "/beauty",            label: "Beleza" },
   { path: "/bazaar/controller", label: "Bazar – Controlador" },
   { path: "/bazaar/cashier",    label: "Bazar – Caixa" },
+  { path: "/evangelism",        label: "Evangelismo" },
 ] as const;
 
 const ADMIN_LINKS = [
-  { path: "/admin/estacoes",      label: "Estações",      Icon: LayoutGrid },
-  { path: "/admin/usuarios",      label: "Usuários",      Icon: Users },
-  { path: "/admin/relatorios",    label: "Relatórios",    Icon: BarChart2 },
-  { path: "/admin/configuracoes", label: "Configurações", Icon: Settings },
+  { path: "/admin/estacoes",       label: "Estações",       Icon: LayoutGrid },
+  { path: "/admin/usuarios",       label: "Usuários",       Icon: Users },
+  { path: "/admin/collaborators",  label: "Facilitadores",  Icon: UsersRound },
+  { path: "/admin/expenses",       label: "Gastos",         Icon: Receipt },
+  { path: "/admin/relatorios",     label: "Relatórios",     Icon: BarChart2 },
+  { path: "/admin/configuracoes",  label: "Configurações",  Icon: Settings },
 ] as const;
 
 export function AdminNavDrawer() {

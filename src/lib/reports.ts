@@ -19,6 +19,12 @@ export interface AgeStat {
   count: number;
 }
 
+export interface ExpenseStat {
+  category: string;
+  total: number;
+  itemCount: number;
+}
+
 export interface ReportsData {
   totalPeople: number;
   peoplePerService: ServiceStat[];
@@ -31,6 +37,15 @@ export interface ReportsData {
   ageDistribution: AgeStat[];
   avgAge: number | null;
   cestaBasicaCount: number;
+  facilitadoresCount: number;
+  expenses: ExpenseStat[];
+  totalExpenses: number;
+  evangelismo: {
+    total: number;
+    prayer: number;
+    conversion: number;
+    reconciliation: number;
+  };
 }
 
 function ageGroup(age: number): string {
@@ -52,6 +67,9 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     { data: registrations },
     { data: bazaarTx },
     { count: cestaBasicaCount },
+    { count: facilitadoresCount },
+    { data: expenseRows },
+    { data: evangelismoRows },
   ] = await Promise.all([
     admin.from("people").select("id, age").eq("event_id", eventId),
     admin
@@ -67,6 +85,18 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
       .select("*", { count: "exact", head: true })
       .eq("event_id", eventId)
       .eq("cesta_basica", true),
+    admin
+      .from("collaborators")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId),
+    admin
+      .from("event_expenses")
+      .select("category, unit_value, quantity")
+      .eq("event_id", eventId),
+    admin
+      .from("evangelism_records")
+      .select("prayer, conversion, reconciliation")
+      .eq("event_id", eventId),
   ]);
 
   const regs = registrations ?? [];
@@ -180,6 +210,28 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
   }));
   const avgAge = persons.length > 0 ? totalAge / persons.length : null;
 
+  // ── 10. Expenses by category ─────────────────────────────────────────────
+  const expenseCatMap: Record<string, { total: number; itemCount: number }> = {};
+  for (const e of expenseRows ?? []) {
+    const line = Number(e.unit_value) * Number(e.quantity);
+    if (!expenseCatMap[e.category]) expenseCatMap[e.category] = { total: 0, itemCount: 0 };
+    expenseCatMap[e.category].total += line;
+    expenseCatMap[e.category].itemCount += 1;
+  }
+  const expenses: ExpenseStat[] = Object.entries(expenseCatMap)
+    .map(([category, { total, itemCount }]) => ({ category, total, itemCount }))
+    .sort((a, b) => b.total - a.total);
+  const totalExpenses = expenses.reduce((s, e) => s + e.total, 0);
+
+  // ── 11. Evangelismo ──────────────────────────────────────────────────────
+  const evRows = evangelismoRows ?? [];
+  const evangelismo = {
+    total: evRows.length,
+    prayer: evRows.filter((r) => r.prayer).length,
+    conversion: evRows.filter((r) => r.conversion).length,
+    reconciliation: evRows.filter((r) => r.reconciliation).length,
+  };
+
   return {
     totalPeople,
     peoplePerService,
@@ -192,5 +244,9 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     ageDistribution,
     avgAge,
     cestaBasicaCount: cestaBasicaCount ?? 0,
+    facilitadoresCount: facilitadoresCount ?? 0,
+    expenses,
+    totalExpenses,
+    evangelismo,
   };
 }

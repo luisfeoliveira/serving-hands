@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { getReportsData } from "@/lib/reports";
-import type { ReportsData, ServiceStat, HourStat, AgeStat } from "@/lib/reports";
+import type { ReportsData, ServiceStat, HourStat, AgeStat, ExpenseStat } from "@/lib/reports";
 
 // ─── Card shell ───────────────────────────────────────────────────────────────
 
@@ -159,9 +159,13 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
       </div>
 
       {/* Top KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card title="Pessoas registradas">
           <p className="text-4xl font-bold tabular-nums">{data.totalPeople}</p>
+        </Card>
+
+        <Card title="Facilitadores">
+          <p className="text-4xl font-bold tabular-nums">{data.facilitadoresCount}</p>
         </Card>
 
         <Card title="Média de serviços / pessoa">
@@ -194,6 +198,47 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
           </p>
         </Card>
       </div>
+
+      {/* Evangelismo */}
+      {data.evangelismo.total > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Card title="Abordagens">
+            <p className="text-4xl font-bold tabular-nums">{data.evangelismo.total}</p>
+          </Card>
+          <Card title="Orações">
+            <p className="text-4xl font-bold tabular-nums">{data.evangelismo.prayer}</p>
+          </Card>
+          <Card title="Conversões">
+            <p className="text-4xl font-bold tabular-nums">{data.evangelismo.conversion}</p>
+          </Card>
+          <Card title="Reconciliações">
+            <p className="text-4xl font-bold tabular-nums">{data.evangelismo.reconciliation}</p>
+          </Card>
+        </div>
+      )}
+
+      {/* Expenses */}
+      {data.totalExpenses > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card title="Total de gastos">
+            <p className="text-3xl font-bold tabular-nums break-all">
+              {fmtR(data.totalExpenses)}
+            </p>
+          </Card>
+          <Card title="Gastos por categoria">
+            <div className="space-y-2.5 flex-1">
+              {data.expenses.map((e) => (
+                <div key={e.category} className="flex items-center justify-between text-sm">
+                  <span className="text-foreground truncate pr-2">{e.category}</span>
+                  <span className="tabular-nums font-semibold text-foreground shrink-0">
+                    {fmtR(e.total)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Middle row — services + peak chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -17,6 +17,7 @@ export function roleToPath(role: UserRole): string {
     beleza:               "/beauty",
     bazar_controlador:    "/bazaar/controller",
     bazar_caixa:          "/bazaar/cashier",
+    evangelism:           "/evangelism",
     admin:                "/admin",
   };
   return map[role] ?? "/login";
@@ -37,6 +38,7 @@ export function roleLabel(role: UserRole): string {
     beleza:               "Beleza",
     bazar_controlador:    "Controlador do Bazar",
     bazar_caixa:          "Caixa do Bazar",
+    evangelism:           "Evangelismo",
     admin:                "Administrador",
   };
   return map[role] ?? role;

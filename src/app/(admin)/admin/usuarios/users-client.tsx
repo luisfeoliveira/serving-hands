@@ -34,6 +34,7 @@ const ALL_ROLES: UserRole[] = [
   "beleza",
   "bazar_controlador",
   "bazar_caixa",
+  "evangelism",
   "admin",
 ];
 

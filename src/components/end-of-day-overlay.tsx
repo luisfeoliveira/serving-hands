@@ -199,7 +199,7 @@ function RecapCard({ data }: { data: RecapData }) {
       <RecapStats data={data} />
 
       <Button onClick={handleShare} disabled={isGenerating} className="w-full" size="sm">
-        {isGenerating ? "Gerando imagem…" : "Compartilhar"}
+        {isGenerating ? "Preparando…" : "Celebre seu dia"}
       </Button>
     </div>
   );

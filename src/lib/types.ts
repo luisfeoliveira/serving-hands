@@ -14,6 +14,7 @@ export type UserRole =
   | "beleza"
   | "bazar_controlador"
   | "bazar_caixa"
+  | "evangelism"
   | "admin";
 
 // ─── Service types ────────────────────────────────────────────────────────────
