@@ -163,6 +163,15 @@ function RecapCard({ data }: { data: RecapData }) {
     `Hoje fui voluntário na Ação Social Mãos que Servem da Congregação Betel ` +
     `e ajudei a comunidade com muito amor! 🙏 #IGREJAUNIDA #MISSÃOCUMPRIDA`;
 
+  const count =
+    data.completedCount > 0
+      ? data.peopleSeen
+      : (data.nursingCount ?? 0) > 0
+        ? data.nursingCount
+        : (data.registeredCount ?? 0) > 0
+          ? data.registeredCount
+          : null;
+
   async function handleShare() {
     if (navigator.share) {
       try {
@@ -182,7 +191,9 @@ function RecapCard({ data }: { data: RecapData }) {
         <p className="text-3xl">🎉</p>
         <h1 className="text-xl font-bold">Que dia incrível!</h1>
         <p className="text-sm text-muted-foreground">
-          Obrigado pelo seu voluntariado hoje.
+          {count != null
+            ? `O seu atendimento levou esperança para ${count} ${count === 1 ? "pessoa" : "pessoas"} hoje. Você foi essencial.`
+            : "Seu papel foi fundamental para o evento acontecer."}
         </p>
       </div>
 
