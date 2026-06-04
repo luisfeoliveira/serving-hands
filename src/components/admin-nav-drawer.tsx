@@ -147,7 +147,7 @@ export function AdminNavDrawer() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Abrir menu de navegação"
-        className="flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+        className="flex items-center justify-center h-8 w-8 rounded-md text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors"
       >
         <Menu className="h-4 w-4" />
       </button>

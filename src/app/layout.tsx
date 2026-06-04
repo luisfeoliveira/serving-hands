@@ -12,6 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Ação Social — Congregação Betel",
   description: "Sistema de gestão do evento Ação Social IV Edição",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({

@@ -15,26 +15,26 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 bg-primary border-b border-primary/20">
         {/* Top bar: title + user controls */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-primary-foreground/60">
               Ação Social IV
             </p>
-            <h1 className="text-sm font-semibold text-foreground">
+            <h1 className="text-sm font-semibold text-primary-foreground">
               {roleLabel(profile.role)}
             </h1>
           </div>
           <div className="flex items-center gap-4">
             {event && <CloseEventButton eventId={event.id} />}
-            <span className="text-sm text-muted-foreground hidden sm:block">
+            <span className="text-sm text-primary-foreground/70 hidden sm:block">
               {profile.name}
             </span>
             <form action={signOut}>
               <button
                 type="submit"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
               >
                 Sair
               </button>
@@ -43,41 +43,41 @@ export default async function AdminLayout({
         </div>
 
         {/* Nav row: scrollable on mobile */}
-        <div className="overflow-x-auto border-t border-border/40">
+        <div className="overflow-x-auto border-t border-primary-foreground/10">
           <nav className="flex items-center gap-1 px-3 py-1.5 min-w-max">
             <Link
               href="/admin/relatorios"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Relatórios
             </Link>
             <Link
               href="/admin/usuarios"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Voluntários
             </Link>
             <Link
               href="/admin/collaborators"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Facilitadores
             </Link>
             <Link
               href="/admin/expenses"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Gastos
             </Link>
             <Link
               href="/admin/estacoes"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Estações
             </Link>
             <Link
               href="/admin/configuracoes"
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors whitespace-nowrap"
             >
               Configurações
             </Link>

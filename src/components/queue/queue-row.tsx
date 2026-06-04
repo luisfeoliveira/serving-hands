@@ -6,14 +6,14 @@ import type { QueueEntry } from "@/lib/types";
 
 // Left border color communicates status at a glance
 const STATUS_BORDER: Record<string, string> = {
-  waiting: "border-l-slate-300",
-  waiting_nursing: "border-l-amber-400",
-  nursing_in_progress: "border-l-blue-400",
-  waiting_medico: "border-l-violet-400",
-  in_progress: "border-l-emerald-500",
-  completed: "border-l-green-400",
-  dispensed: "border-l-slate-300",
-  abandoned: "border-l-red-400",
+  waiting:            "border-l-border",
+  waiting_nursing:    "border-l-primary/40",
+  nursing_in_progress:"border-l-primary/60",
+  waiting_medico:     "border-l-primary/80",
+  in_progress:        "border-l-primary",
+  completed:          "border-l-emerald-400",
+  dispensed:          "border-l-border",
+  abandoned:          "border-l-red-400",
 };
 
 interface QueueRowProps {

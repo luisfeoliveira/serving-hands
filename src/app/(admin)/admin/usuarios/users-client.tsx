@@ -349,8 +349,8 @@ function EditForm({
     user.medical_specialties?.length
       ? user.medical_specialties
       : user.medical_specialty && user.role === "controlador"
-      ? [user.medical_specialty]
-      : []
+        ? [user.medical_specialty]
+        : []
   );
   const [isPending, startTransition] = useTransition();
 
@@ -580,7 +580,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserWithEmail[] })
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Buscar por nome, e-mail ou função…"
-        className="h-9 text-sm max-w-sm"
+        className="h-9 text-sm max-w-sm mx-2"
       />
 
       {active.length > 0 && (

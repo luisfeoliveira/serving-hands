@@ -29,11 +29,11 @@ export default async function StationLayout({
   return (
     <EventGuard initialActive={guardActive} eventId={event?.id}>
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-10 border-b border-primary/20 bg-primary px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {profile.role === "admin" && <AdminNavDrawer />}
             <Logo />
-            <span className="text-sm text-muted-foreground hidden sm:block">
+            <span className="text-sm text-primary-foreground/70 hidden sm:block">
               {roleLabel(profile.role)}
             </span>
           </div>
@@ -44,7 +44,7 @@ export default async function StationLayout({
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                 >
                   Sair
                 </button>
@@ -65,13 +65,13 @@ export default async function StationLayout({
                     <FinishDayButton eventId={event.id} />
                   </div>
                 )}
-                <span className="text-sm text-muted-foreground hidden sm:block">
+                <span className="text-sm text-primary-foreground/70 hidden sm:block">
                   {profile.name}
                 </span>
                 <form action={signOut} className="hidden sm:block">
                   <button
                     type="submit"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                   >
                     Sair
                   </button>

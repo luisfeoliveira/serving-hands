@@ -8,35 +8,35 @@ const STATUS_CONFIG: Record<
 > = {
   waiting: {
     label: "Aguardando",
-    className: "bg-slate-100 text-slate-600 border-slate-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   waiting_nursing: {
     label: "Ag. Enfermagem",
-    className: "bg-amber-100 text-amber-800 border-amber-300",
+    className: "bg-primary/10 text-primary border-primary/20",
   },
   nursing_in_progress: {
     label: "Em triagem",
-    className: "bg-blue-100 text-blue-800 border-blue-300",
+    className: "bg-primary/15 text-primary border-primary/25",
   },
   waiting_medico: {
     label: "Ag. Médico",
-    className: "bg-violet-100 text-violet-800 border-violet-300",
+    className: "bg-primary/20 text-primary border-primary/30",
   },
   in_progress: {
     label: "Em atendimento",
-    className: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    className: "bg-primary/25 text-primary border-primary/40 font-semibold",
   },
   completed: {
     label: "Concluído",
-    className: "bg-green-100 text-green-800 border-green-300",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   dispensed: {
     label: "Dispensado",
-    className: "bg-slate-100 text-slate-500 border-slate-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   abandoned: {
     label: "Abandonado",
-    className: "bg-red-100 text-red-700 border-red-300",
+    className: "bg-red-50 text-red-600 border-red-200",
   },
 };
 

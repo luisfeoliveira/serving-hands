@@ -230,7 +230,7 @@ function ProfessionalPicker({
           Selecionar profissional
         </p>
         {patientSpecialty && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
             {SPECIALTY_LABELS[patientSpecialty] ?? patientSpecialty}
           </span>
         )}
@@ -474,15 +474,15 @@ function AssignmentSection({
                 className={cn(
                   "rounded-md border px-3 py-2",
                   p.busy
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-emerald-300 bg-emerald-50"
+                    ? "border-border bg-muted/60"
+                    : "border-emerald-200 bg-emerald-50"
                 )}
               >
                 <p className="text-sm font-medium">{p.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {professionLabel(p)}
                 </p>
-                <p className={cn("text-xs font-medium", p.busy ? "text-amber-700" : "text-emerald-700")}>
+                <p className={cn("text-xs font-medium", p.busy ? "text-muted-foreground" : "text-emerald-700")}>
                   {p.busy ? `● Atendendo ${p.patientName}` : "● Disponível"}
                 </p>
               </div>
