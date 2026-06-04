@@ -13,6 +13,10 @@ export interface RecapData {
   // Extra metrics for roles that don't have completed_by records
   registeredCount?: number; // reception: people registered
   nursingCount?: number;    // nursing: nursing steps completed
+  // For share card
+  volunteerName: string;
+  volunteerSpecialty: string | null;
+  volunteerIsProfessional: boolean;
 }
 
 export async function GET(request: Request) {
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
     { data: nursingRows },
   ] = await Promise.all([
     admin.from("events").select("name").eq("id", eventId).single(),
-    admin.from("users").select("role").eq("id", user.id).single(),
+    admin.from("users").select("name, role").eq("id", user.id).single(),
 
     // Professionals: appointments they directly completed
     admin
@@ -90,6 +94,35 @@ export async function GET(request: Request) {
     registeredCount = registeredRows?.length ?? 0;
   }
 
+  // Reception and controllers get the generic volunteer card
+  const NON_PROFESSIONAL_ROLES = new Set([
+    "recepcao",
+    "controlador",
+    "bazar_controlador",
+    "bazar_caixa",
+    "admin",
+  ]);
+  const volunteerIsProfessional = userRow?.role
+    ? !NON_PROFESSIONAL_ROLES.has(userRow.role)
+    : false;
+
+  const ROLE_SPECIALTY: Record<string, string> = {
+    medico: "Medicina",
+    odontologo: "Odontologia",
+    fonoaudiologo: "Fonoaudiologia",
+    psicologo: "Psicologia",
+    assistente_social: "Serviço Social",
+    enfermagem: "Enfermagem",
+    recepcao: "Recepção",
+    consultor_juridico: "Consultoria Jurídica",
+    consultor_financeiro: "Consultoria Financeira",
+    beleza: "Beleza",
+    controlador: "Coordenação",
+    bazar_controlador: "Bazar",
+    bazar_caixa: "Bazar",
+    admin: "Administração",
+  };
+
   const data: RecapData = {
     eventName: eventRow?.name ?? "Ação Social",
     completedCount,
@@ -99,6 +132,9 @@ export async function GET(request: Request) {
     endedAt,
     registeredCount,
     nursingCount,
+    volunteerName: userRow?.name ?? "Voluntário",
+    volunteerSpecialty: userRow?.role ? (ROLE_SPECIALTY[userRow.role] ?? null) : null,
+    volunteerIsProfessional,
   };
 
   return Response.json(data);

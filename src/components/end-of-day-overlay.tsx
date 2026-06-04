@@ -125,9 +125,7 @@ export function RecapStats({ data }: { data: RecapData }) {
 }
 
 function RecapCard({ data }: { data: RecapData }) {
-  const shareText =
-    `Hoje fui voluntário na Ação Social Mãos que Servem da Congregação Betel ` +
-    `e ajudei a comunidade com muito amor! 🙏 #IGREJAUNIDA #MISSÃOCUMPRIDA`;
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const count =
     data.completedCount > 0
@@ -139,16 +137,42 @@ function RecapCard({ data }: { data: RecapData }) {
           : null;
 
   async function handleShare() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-        return;
-      } catch {
-        // fallthrough to clipboard
+    setIsGenerating(true);
+    try {
+      const params = new URLSearchParams({
+        name: data.volunteerName,
+        specialty: data.volunteerSpecialty ?? "",
+        isProfessional: String(data.volunteerIsProfessional),
+      });
+      const res = await fetch(`/api/share-card?${params}`);
+      const blob = await res.blob();
+      const file = new File([blob], "voluntario-acao-social.png", { type: "image/png" });
+
+      let shared = false;
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          shared = true;
+        } catch {
+          // user cancelled or share failed — fall through to download
+        }
       }
+
+      if (!shared) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "voluntario-acao-social.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch {
+      // user cancelled — silent
+    } finally {
+      setIsGenerating(false);
     }
-    await navigator.clipboard.writeText(shareText);
-    alert("Texto copiado para a área de transferência!");
   }
 
   return (
@@ -174,8 +198,8 @@ function RecapCard({ data }: { data: RecapData }) {
 
       <RecapStats data={data} />
 
-      <Button onClick={handleShare} className="w-full" size="sm">
-        Compartilhar
+      <Button onClick={handleShare} disabled={isGenerating} className="w-full" size="sm">
+        {isGenerating ? "Gerando imagem…" : "Compartilhar"}
       </Button>
     </div>
   );

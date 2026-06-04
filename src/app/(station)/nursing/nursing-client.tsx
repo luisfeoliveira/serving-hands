@@ -26,6 +26,7 @@ const SPECIALTY_OPTIONS = [
 interface VitalsState {
   bp_systolic: string;
   bp_diastolic: string;
+  blood_glucose: string;
   weight: string;
   temperature: string;
 }
@@ -34,6 +35,7 @@ function parseVitals(v: VitalsState) {
   return {
     bp_systolic: v.bp_systolic ? parseInt(v.bp_systolic) : null,
     bp_diastolic: v.bp_diastolic ? parseInt(v.bp_diastolic) : null,
+    blood_glucose: v.blood_glucose ? parseInt(v.blood_glucose) : null,
     weight: v.weight ? parseFloat(v.weight) : null,
     temperature: v.temperature ? parseFloat(v.temperature) : null,
   };
@@ -53,6 +55,7 @@ function TriageCard({
   const [vitals, setVitals] = useState<VitalsState>({
     bp_systolic: "",
     bp_diastolic: "",
+    blood_glucose: "",
     weight: "",
     temperature: "",
   });
@@ -236,6 +239,20 @@ function TriageCard({
                 max={45}
               />
               <span className="text-xs text-muted-foreground shrink-0">°C</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Glicemia</Label>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                placeholder="100"
+                value={vitals.blood_glucose}
+                onChange={set("blood_glucose")}
+                className="h-9 text-sm"
+                min={0}
+              />
+              <span className="text-xs text-muted-foreground shrink-0">mg/dL</span>
             </div>
           </div>
         </div>

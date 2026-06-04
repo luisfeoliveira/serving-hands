@@ -303,6 +303,7 @@ function AppointmentCard({
   const [started, setStarted] = useState(!!entry.started_at);
   const [form, setForm] = useState<FormState>({});
   const [cestaBasica, setCestaBasica] = useState(false);
+  const [forwarded, setForwarded] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const set: Setter = (key) => (value) =>
@@ -323,7 +324,10 @@ function AppointmentCard({
     startTransition(async () => {
       const r = await forwardToSocialService(entry.id);
       if (r.error) toast.error(r.error);
-      else toast.success("Pessoa encaminhada para o Serviço Social.");
+      else {
+        toast.success("Pessoa encaminhada para o Serviço Social.");
+        setForwarded(true);
+      }
     });
   }
 
@@ -389,15 +393,21 @@ function AppointmentCard({
       <div className="flex flex-wrap justify-end gap-2 pt-1 border-t border-border/50">
         <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
         {serviceType === "psicologia" && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleForward}
-            disabled={isPending}
-            className="h-8 px-3 text-xs"
-          >
-            {isPending ? "…" : "Encaminhar para Serviço Social"}
-          </Button>
+          forwarded ? (
+            <span className="text-xs text-emerald-700 font-medium px-2 py-1 rounded-md bg-emerald-50 border border-emerald-200 shrink-0">
+              ✓ Encaminhado para SS
+            </span>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleForward}
+              disabled={isPending}
+              className="h-8 px-3 text-xs"
+            >
+              {isPending ? "…" : "Encaminhar para Serviço Social"}
+            </Button>
+          )
         )}
         <Button
           size="sm"
