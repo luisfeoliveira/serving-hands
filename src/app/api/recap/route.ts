@@ -30,11 +30,12 @@ export async function GET(request: Request) {
 
   const [
     { data: eventRow },
+    { data: userRow },
     { data: completedRows },
     { data: nursingRows },
-    { data: registeredRows },
   ] = await Promise.all([
     admin.from("events").select("name").eq("id", eventId).single(),
+    admin.from("users").select("role").eq("id", user.id).single(),
 
     // Professionals: appointments they directly completed
     admin
@@ -51,13 +52,6 @@ export async function GET(request: Request) {
       .eq("event_id", eventId)
       .eq("assigned_to", user.id)
       .not("nursing_completed_at", "is", null),
-
-    // Reception / general: people registered during the event
-    // (rough proxy — counts all registrations for the event)
-    admin
-      .from("service_registrations")
-      .select("person_id")
-      .eq("event_id", eventId),
   ]);
 
   const completedCount = completedRows?.length ?? 0;
@@ -85,8 +79,16 @@ export async function GET(request: Request) {
     ? timestamps.reduce((a, b) => (a > b ? a : b))
     : null;
 
-  // Total distinct people in the event (for reception recap)
-  const registeredCount = new Set(registeredRows?.map((r) => r.person_id)).size;
+  // Only count for recepcao: people this specific user registered
+  let registeredCount: number | undefined;
+  if (userRow?.role === "recepcao") {
+    const { data: registeredRows } = await admin
+      .from("people")
+      .select("id")
+      .eq("event_id", eventId)
+      .eq("registered_by", user.id);
+    registeredCount = registeredRows?.length ?? 0;
+  }
 
   const data: RecapData = {
     eventName: eventRow?.name ?? "Ação Social",

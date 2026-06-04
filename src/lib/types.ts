@@ -87,6 +87,7 @@ export interface DbPerson {
   name: string;
   age: number;
   registered_at: string;
+  registered_by: string | null;
 }
 
 export interface DbServiceRegistration {

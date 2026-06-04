@@ -89,22 +89,9 @@ export function RecapStats({ data }: { data: RecapData }) {
     !hasProfessionalStats && !hasNursingStats && (data.registeredCount ?? 0) > 0;
 
   if (hasProfessionalStats) {
+    // Count shown in header — only show service breakdown + time here
     return (
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-            <p className="text-2xl font-bold tabular-nums">{data.peopleSeen}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {data.peopleSeen === 1 ? "pessoa atendida" : "pessoas atendidas"}
-            </p>
-          </div>
-          <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-            <p className="text-2xl font-bold tabular-nums">{data.completedCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {data.completedCount === 1 ? "atendimento" : "atendimentos"}
-            </p>
-          </div>
-        </div>
         {data.services.length > 0 && (
           <div className="space-y-1.5">
             {data.services.map((s) => (
@@ -124,30 +111,9 @@ export function RecapStats({ data }: { data: RecapData }) {
     );
   }
 
-  if (hasNursingStats) {
-    return (
-      <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-        <p className="text-2xl font-bold tabular-nums">{data.nursingCount}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {data.nursingCount === 1
-            ? "triagem de enfermagem"
-            : "triagens de enfermagem"}
-        </p>
-      </div>
-    );
-  }
-
-  if (hasRegistrationStats) {
-    return (
-      <div className="rounded-lg bg-muted/40 px-4 py-3 text-center">
-        <p className="text-2xl font-bold tabular-nums">{data.registeredCount}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {data.registeredCount === 1
-            ? "pessoa no evento hoje"
-            : "pessoas no evento hoje"}
-        </p>
-      </div>
-    );
+  // Nursing and reception: count shown in header — nothing extra to show
+  if (hasNursingStats || hasRegistrationStats) {
+    return null;
   }
 
   // No data at all — coordinator / support role
@@ -187,14 +153,23 @@ function RecapCard({ data }: { data: RecapData }) {
 
   return (
     <div className="relative z-10 bg-background rounded-2xl border border-border shadow-lg p-6 space-y-5 max-w-sm w-full mx-4">
-      <div className="text-center space-y-1">
+      <div className="text-center space-y-2">
         <p className="text-3xl">🎉</p>
         <h1 className="text-xl font-bold">Que dia incrível!</h1>
-        <p className="text-sm text-muted-foreground">
-          {count != null
-            ? `O seu atendimento levou esperança para ${count} ${count === 1 ? "pessoa" : "pessoas"} hoje. Você foi essencial.`
-            : "Seu papel foi fundamental para o evento acontecer."}
-        </p>
+        {count != null ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              O seu atendimento levou esperança para
+            </p>
+            <p className="text-5xl font-bold tabular-nums">{count}</p>
+            <p className="text-sm text-muted-foreground">
+              {count === 1 ? "pessoa" : "pessoas"} hoje.
+            </p>
+            <p className="text-sm text-muted-foreground">Você foi essencial!</p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Você foi essencial!</p>
+        )}
       </div>
 
       <RecapStats data={data} />

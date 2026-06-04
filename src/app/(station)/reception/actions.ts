@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { ServiceType, DbPerson } from "@/lib/types";
 
 // ─── Lookup person by CPF ─────────────────────────────────────────────────────
@@ -123,6 +124,10 @@ export async function registerPerson(input: {
 }): Promise<{ error?: string }> {
   if (!input.services.length) return { error: "Selecione ao menos um serviço." };
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada." };
+
   const admin = createAdminClient();
 
   const { data: person, error: personErr } = await admin
@@ -133,6 +138,7 @@ export async function registerPerson(input: {
         cpf: input.cpf.replace(/\D/g, ""),
         name: input.name.trim(),
         age: input.age,
+        registered_by: user.id,
       },
       { onConflict: "event_id,cpf" }
     )
