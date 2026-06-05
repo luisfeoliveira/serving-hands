@@ -60,7 +60,7 @@ export async function resetPassword(
   if (!email) return { error: "Informe o e-mail." };
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/auth/callback`,
