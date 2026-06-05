@@ -38,6 +38,20 @@ const REFERRAL_LABELS: Record<string, string> = {
   other: "Outro",
 };
 
+const LEGAL_AREA_LABELS: Record<string, string> = {
+  familia: "Direito de Família",
+  trabalhista: "Direito Trabalhista",
+  previdenciario: "Previdenciário",
+  outros: "Outros",
+};
+
+const FINANCE_AREA_LABELS: Record<string, string> = {
+  dividas: "Dívidas",
+  orcamento: "Orçamento",
+  microcredito: "Microcrédito",
+  outros: "Outros",
+};
+
 function ClinicalForm({
   form,
   set,
@@ -124,7 +138,7 @@ function LegalForm({
         <Label className="text-xs">
           Área <span className="text-red-500">*</span>
         </Label>
-        <Select value={form.area ?? ""} onValueChange={set("area")}>
+        <Select value={form.area ?? ""} onValueChange={set("area")} itemToStringLabel={(v) => LEGAL_AREA_LABELS[v as string] ?? String(v)}>
           <SelectTrigger className="h-9 text-sm">
             <SelectValue placeholder="Selecione a área…" />
           </SelectTrigger>
@@ -165,7 +179,7 @@ function FinanceForm({
         <Label className="text-xs">
           Área <span className="text-red-500">*</span>
         </Label>
-        <Select value={form.area ?? ""} onValueChange={set("area")}>
+        <Select value={form.area ?? ""} onValueChange={set("area")} itemToStringLabel={(v) => FINANCE_AREA_LABELS[v as string] ?? String(v)}>
           <SelectTrigger className="h-9 text-sm">
             <SelectValue placeholder="Selecione a área…" />
           </SelectTrigger>
