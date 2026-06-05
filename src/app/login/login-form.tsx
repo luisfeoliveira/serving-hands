@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { signIn, resetPassword } from "./actions";
+import { signIn } from "./actions";
+import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,36 @@ import { Button } from "@/components/ui/button";
 export function LoginForm() {
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [signInState, signInAction, signInPending] = useActionState(signIn, null);
-  const [resetState, resetAction, resetPending] = useActionState(resetPassword, null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // ── Reset password (client-side — PKCE verifier stored in localStorage) ──────
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetPending, startReset] = useTransition();
+
+  function handleReset(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const email = (new FormData(e.currentTarget).get("email") as string ?? "").trim();
+    if (!email) { setResetError("Informe o e-mail."); return; }
+    setResetError(null);
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin).replace(/\/$/, "");
+    startReset(async () => {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/auth/callback`,
+      });
+      if (error) setResetError("Não foi possível enviar. Tente novamente.");
+      else setResetSent(true);
+    });
+  }
+
   if (mode === "forgot") {
-    const success = resetState && "success" in resetState;
     return (
       <div className="space-y-4">
-        {success ? (
+        {resetSent ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              ✅ {resetState.success}
+              ✅ Se este e-mail estiver cadastrado, você receberá as instruções em breve.
             </p>
             <button
               type="button"
@@ -31,7 +51,7 @@ export function LoginForm() {
             </button>
           </div>
         ) : (
-          <form action={resetAction} className="space-y-4">
+          <form onSubmit={handleReset} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="reset-email">E-mail</Label>
               <Input
@@ -46,10 +66,8 @@ export function LoginForm() {
               />
             </div>
 
-            {"error" in (resetState ?? {}) && (
-              <p className="text-sm text-destructive" role="alert">
-                {(resetState as { error: string }).error}
-              </p>
+            {resetError && (
+              <p className="text-sm text-destructive" role="alert">{resetError}</p>
             )}
 
             <Button

@@ -52,23 +52,3 @@ export async function signIn(
   redirect(roleToPath(profile.role));
 }
 
-export async function resetPassword(
-  _prev: LoginState,
-  formData: FormData
-): Promise<LoginState> {
-  const email = (formData.get("email") as string | null)?.trim() ?? "";
-  if (!email) return { error: "Informe o e-mail." };
-
-  const supabase = await createClient();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback`,
-  });
-
-  // Always return success — never reveal whether email is registered
-  return {
-    success:
-      "Se este e-mail estiver cadastrado, você receberá as instruções em breve.",
-  };
-}
