@@ -17,11 +17,14 @@ import { PriorityBadge } from "@/components/queue/priority-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { startAttendance, completeAppointment, forwardToSocialService } from "@/lib/professional-actions";
+import { Odontogram } from "@/components/professional/odontogram";
 import type {
   ServiceType,
   QueueEntry,
   AppointmentData,
   ClinicalData,
+  OdontologiaData,
+  OdontogramData,
   ConsultoriaJuridicaData,
   ConsultoriaFinanceiraData,
 } from "@/lib/types";
@@ -212,6 +215,8 @@ function AppointmentForm({
   onEvent,
   cestaBasica,
   onCestaBasicaChange,
+  odontogramData,
+  onOdontogramChange,
 }: {
   serviceType: ServiceType;
   form: FormState;
@@ -219,9 +224,23 @@ function AppointmentForm({
   onEvent: EventSetter;
   cestaBasica?: boolean;
   onCestaBasicaChange?: (v: boolean) => void;
+  odontogramData?: OdontogramData;
+  onOdontogramChange?: (data: OdontogramData) => void;
 }) {
   switch (serviceType) {
     case "odontologia":
+      return (
+        <>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Odontograma</Label>
+            <Odontogram
+              value={odontogramData ?? {}}
+              onChange={onOdontogramChange}
+            />
+          </div>
+          <ClinicalForm form={form} set={set} onEvent={onEvent} />
+        </>
+      );
     case "fonoaudiologia":
     case "psicologia":
       return <ClinicalForm form={form} set={set} onEvent={onEvent} />;
@@ -249,10 +268,19 @@ function AppointmentForm({
 
 function buildAppointmentData(
   serviceType: ServiceType,
-  form: FormState
+  form: FormState,
+  odontogramData?: OdontogramData
 ): AppointmentData | null {
   switch (serviceType) {
-    case "odontologia":
+    case "odontologia": {
+      if (!form.referral) return null;
+      return {
+        chief_complaint: form.chief_complaint ?? "",
+        referral: form.referral as OdontologiaData["referral"],
+        ...(form.referral === "other" && { referral_notes: form.referral_notes ?? "" }),
+        odontogram: odontogramData ?? {},
+      } satisfies OdontologiaData;
+    }
     case "fonoaudiologia":
     case "psicologia":
     case "servico_social": {
@@ -318,6 +346,7 @@ function AppointmentCard({
   const [form, setForm] = useState<FormState>({});
   const [cestaBasica, setCestaBasica] = useState(false);
   const [forwarded, setForwarded] = useState(false);
+  const [odontogramData, setOdontogramData] = useState<OdontogramData>({});
   const [isPending, startTransition] = useTransition();
 
   const set: Setter = (key) => (value) =>
@@ -346,7 +375,7 @@ function AppointmentCard({
   }
 
   function submit() {
-    const data = buildAppointmentData(serviceType, form);
+    const data = buildAppointmentData(serviceType, form, odontogramData);
     if (!data) {
       toast.error("Preencha os campos obrigatórios.");
       return;
@@ -401,6 +430,8 @@ function AppointmentCard({
           onEvent={onEvent}
           cestaBasica={cestaBasica}
           onCestaBasicaChange={setCestaBasica}
+          odontogramData={odontogramData}
+          onOdontogramChange={setOdontogramData}
         />
       </div>
 

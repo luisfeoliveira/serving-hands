@@ -81,7 +81,7 @@ export default async function StationLayout({
           </div>
         </header>
 
-        <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6">
+        <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6">
           {children}
         </main>
 

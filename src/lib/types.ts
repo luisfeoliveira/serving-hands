@@ -173,6 +173,33 @@ export type ClinicalData = {
   referral_notes?: string;
 };
 
+// V=Vestibular/Buccal, L=Lingual/Palatina, M=Mesial, D=Distal, O=Oclusal/Incisal
+export type ToothSurface = "V" | "L" | "M" | "D" | "O";
+
+// Per-surface marking types
+export type SurfaceState =
+  | "carie"
+  | "restauracao"
+  | "restauracao_satisfatoria";
+
+// Whole-tooth conditions
+export type ToothCondition =
+  | "extracao";
+
+export type ToothData = {
+  condition?: ToothCondition;
+  surfaces?: Partial<Record<ToothSurface, SurfaceState>>;
+};
+
+export type OdontogramData = Partial<Record<string, ToothData>>;
+
+export type OdontologiaData = {
+  chief_complaint: string;
+  referral: "resolved" | "sus" | "other";
+  referral_notes?: string;
+  odontogram?: OdontogramData;
+};
+
 export type ConsultoriaJuridicaData = {
   area: "familia" | "trabalhista" | "previdenciario" | "outros";
   case_summary: string;
@@ -196,6 +223,7 @@ export type BazaarData = {
 export type AppointmentData =
   | MedicinaData
   | ClinicalData
+  | OdontologiaData
   | ConsultoriaJuridicaData
   | ConsultoriaFinanceiraData
   | BelezaData
