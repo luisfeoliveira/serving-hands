@@ -37,6 +37,26 @@ function formatCPF(value: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
+function isValidCPF(value: string): boolean {
+  const d = value.replace(/\D/g, "");
+  if (d.length !== 11) return false;
+  // All same digits (e.g. 111.111.111-11)
+  if (/^(\d)\1{10}$/.test(d)) return false;
+  // First check digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+  let check = (sum * 10) % 11;
+  if (check === 10 || check === 11) check = 0;
+  if (check !== parseInt(d[9])) return false;
+  // Second check digit
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+  check = (sum * 10) % 11;
+  if (check === 10 || check === 11) check = 0;
+  if (check !== parseInt(d[10])) return false;
+  return true;
+}
+
 type Mode = "idle" | "new" | "existing";
 
 interface Props {
@@ -92,9 +112,8 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
   const [priority, setPriority] = useState(false);
 
   function handleSearch() {
-    const clean = cpf.replace(/\D/g, "");
-    if (clean.length !== 11) {
-      toast.error("CPF deve ter 11 dígitos.");
+    if (!isValidCPF(cpf)) {
+      toast.error("CPF inválido. Verifique os números e tente novamente.");
       return;
     }
 
