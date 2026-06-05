@@ -88,7 +88,8 @@ export async function getControllerEntries(
     .select("*, person:people(*)")
     .eq("event_id", eventId)
     .eq("service_type", serviceType)
-    .eq("status", waitingStatus);
+    .eq("status", waitingStatus)
+    .is("forwarded_from", null); // forwarded entries are claimed directly by the professional, not via controller
 
   if (medicalSpecialty) {
     query = query.eq("medical_specialty", medicalSpecialty);
