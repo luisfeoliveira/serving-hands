@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AppointmentData } from "@/lib/types";
+import type { AppointmentData, HistoryEntry, UserRole } from "@/lib/types";
 
 export async function startAttendance(
   entryId: string
@@ -111,6 +111,91 @@ export async function forwardToSocialService(
 
   if (insertErr) return { error: insertErr.message };
   return {};
+}
+
+// ─── Completed attendance history ─────────────────────────────────────────────
+
+export async function getCompletedHistory(input: {
+  eventId: string;
+  professionalId: string;
+  role: UserRole;
+}): Promise<HistoryEntry[]> {
+  const admin = createAdminClient();
+
+  if (input.role === "enfermagem") {
+    // Nursing: find all entries where nurse recorded vitals in this event
+    const { data: vitalsData } = await admin
+      .from("health_vitals")
+      .select("bp_systolic, bp_diastolic, blood_glucose, weight, temperature, service_registration_id, recorded_at")
+      .eq("recorded_by", input.professionalId)
+      .order("recorded_at", { ascending: false })
+      .limit(50);
+
+    if (!vitalsData?.length) return [];
+
+    const regIds = vitalsData.map((v) => v.service_registration_id);
+    const { data: regsData } = await admin
+      .from("service_registrations")
+      .select("id, nursing_completed_at, service_type, chief_complaint, person:people(name, age, cpf)")
+      .in("id", regIds)
+      .eq("event_id", input.eventId);
+
+    if (!regsData) return [];
+
+    const results: HistoryEntry[] = [];
+    for (const reg of regsData) {
+      const v = vitalsData.find((x) => x.service_registration_id === reg.id);
+      const personRaw = reg.person as unknown;
+      const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; cpf: string } | undefined) : (personRaw as { name: string; age: number; cpf: string } | null);
+      if (!person) continue;
+      results.push({
+        registrationId: reg.id,
+        person: { name: person.name, age: person.age, cpf: person.cpf },
+        completedAt: reg.nursing_completed_at ?? v?.recorded_at ?? null,
+        serviceType: reg.service_type as import("@/lib/types").ServiceType,
+        chiefComplaint: reg.chief_complaint,
+        vitals: v ? {
+          bp_systolic: v.bp_systolic,
+          bp_diastolic: v.bp_diastolic,
+          blood_glucose: v.blood_glucose,
+          weight: v.weight,
+          temperature: v.temperature,
+        } : null,
+      });
+    }
+    return results;
+  }
+
+  // Clinical professionals: query by completed_by
+  const { data } = await admin
+    .from("service_registrations")
+    .select("id, completed_at, service_type, chief_complaint, person:people(name, age, cpf), appointments(data), health_vitals(bp_systolic, bp_diastolic, blood_glucose, weight, temperature)")
+    .eq("event_id", input.eventId)
+    .eq("completed_by", input.professionalId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(50);
+
+  if (!data) return [];
+
+  const results: HistoryEntry[] = [];
+  for (const reg of data) {
+    const personRaw = reg.person as unknown;
+    const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; cpf: string } | undefined) : (personRaw as { name: string; age: number; cpf: string } | null);
+    if (!person) continue;
+    const appts = reg.appointments as Array<{ data: AppointmentData }> | null;
+    const vitalsArr = reg.health_vitals as Array<{ bp_systolic: number | null; bp_diastolic: number | null; blood_glucose: number | null; weight: number | null; temperature: number | null }> | null;
+    results.push({
+      registrationId: reg.id,
+      person: { name: person.name, age: person.age, cpf: person.cpf },
+      completedAt: reg.completed_at,
+      serviceType: reg.service_type as import("@/lib/types").ServiceType,
+      chiefComplaint: reg.chief_complaint,
+      appointmentData: appts?.[0]?.data ?? null,
+      vitals: vitalsArr?.[0] ?? null,
+    });
+  }
+  return results;
 }
 
 export async function claimForwardedEntry(

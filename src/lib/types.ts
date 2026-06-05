@@ -79,6 +79,7 @@ export interface DbUser {
   medical_specialties: string[] | null; // multi-specialty for controllers
   day_finished_at?: string | null;
   day_finished_event_id?: string | null;
+  registration_number?: string | null; // CRM, COREN, CRO, CRFa, CRP, etc.
 }
 
 export interface DbPerson {
@@ -228,6 +229,67 @@ export type AppointmentData =
   | ConsultoriaFinanceiraData
   | BelezaData
   | BazaarData;
+
+// ─── Registration council labels ─────────────────────────────────────────────
+
+export const REGISTRATION_LABEL: Partial<Record<UserRole, string>> = {
+  medico:        "CRM",
+  enfermagem:    "COREN",
+  odontologo:    "CRO",
+  fonoaudiologo: "CRFa",
+  psicologo:     "CRP",
+};
+
+// ─── Ficha (PDF export) data ──────────────────────────────────────────────────
+
+export type ProfessionalInfo = {
+  name: string;
+  role: UserRole;
+  registration_number?: string | null;
+};
+
+export type EventInfo = {
+  name: string;
+  date: string; // "YYYY-MM-DD"
+};
+
+export type FichaData = {
+  event: EventInfo;
+  person: { name: string; age: number; cpf: string };
+  professional: ProfessionalInfo;
+  serviceType: ServiceType;
+  completedAt?: string;
+  chief_complaint?: string;
+  referral?: "resolved" | "sus" | "other";
+  referral_notes?: string;
+  observacao?: string; // medicina only
+  vitals?: {
+    bp_systolic?: number | null;
+    bp_diastolic?: number | null;
+    blood_glucose?: number | null;
+    weight?: number | null;
+    temperature?: number | null;
+  };
+  odontogram?: OdontogramData;
+};
+
+// ─── History entry (completed attendances) ───────────────────────────────────
+
+export type HistoryEntry = {
+  registrationId: string;
+  person: { name: string; age: number; cpf: string };
+  completedAt: string | null;
+  serviceType: ServiceType;
+  chiefComplaint?: string | null;
+  appointmentData?: AppointmentData | null;
+  vitals?: {
+    bp_systolic?: number | null;
+    bp_diastolic?: number | null;
+    blood_glucose?: number | null;
+    weight?: number | null;
+    temperature?: number | null;
+  } | null;
+};
 
 // ─── Enriched queue row (used in UI) ─────────────────────────────────────────
 

@@ -9,7 +9,7 @@ import { PriorityBadge } from "@/components/queue/priority-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { claimForwardedEntry } from "@/lib/professional-actions";
 import { createClient } from "@/lib/supabase/client";
-import type { QueueEntry } from "@/lib/types";
+import type { QueueEntry, ProfessionalInfo, EventInfo } from "@/lib/types";
 
 // ─── Forwarded entry card ─────────────────────────────────────────────────────
 
@@ -74,6 +74,8 @@ interface Props {
   professionalId: string | null;
   initialEntries: QueueEntry[];
   initialForwardedEntries: QueueEntry[];
+  professional: ProfessionalInfo;
+  event: EventInfo;
 }
 
 export function SocialWorkClient({
@@ -81,6 +83,8 @@ export function SocialWorkClient({
   professionalId,
   initialEntries,
   initialForwardedEntries,
+  professional,
+  event,
 }: Props) {
   const [forwarded, setForwarded] = useState<QueueEntry[]>(initialForwardedEntries);
   const [, startTransition] = useTransition();
@@ -153,6 +157,8 @@ export function SocialWorkClient({
           serviceType="servico_social"
           professionalId={professionalId}
           initialEntries={initialEntries}
+          professional={professional}
+          event={event}
         />
       </div>
     </div>

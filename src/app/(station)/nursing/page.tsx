@@ -27,6 +27,8 @@ export default async function NursingPage() {
       eventId={event.id}
       nurseId={profile.role === "admin" ? null : profile.id}
       initialEntries={initialEntries}
+      professional={{ name: profile.name, role: profile.role, registration_number: profile.registration_number }}
+      event={{ name: event.name, date: event.date }}
     />
   );
 }

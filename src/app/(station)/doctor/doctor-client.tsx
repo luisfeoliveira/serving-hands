@@ -11,8 +11,9 @@ import { StatusBadge } from "@/components/queue/status-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { startAttendance } from "@/lib/professional-actions";
 import { completeAppointment } from "./actions";
+import { AppointmentHistory } from "@/components/ficha/appointment-history";
 import { cn } from "@/lib/utils";
-import type { QueueEntry, DbHealthVitals } from "@/lib/types";
+import type { QueueEntry, DbHealthVitals, ProfessionalInfo, EventInfo } from "@/lib/types";
 
 const SPECIALTY_LABELS: Record<string, string> = {
   clinica_geral: "Clínica Geral",
@@ -52,9 +53,13 @@ const REFERRAL_OPTIONS = [
 
 function AppointmentCard({
   entry,
+  professional,
+  event,
   onSuccess,
 }: {
   entry: QueueEntry;
+  professional: ProfessionalInfo;
+  event: EventInfo;
   onSuccess: () => void;
 }) {
   const [started, setStarted] = useState(!!entry.started_at);
@@ -207,9 +212,11 @@ interface Props {
   eventId: string;
   doctorId: string | null;
   initialEntries: QueueEntry[];
+  professional: ProfessionalInfo;
+  event: EventInfo;
 }
 
-export function DoctorClient({ eventId, doctorId, initialEntries }: Props) {
+export function DoctorClient({ eventId, doctorId, initialEntries, professional, event }: Props) {
   const { entries, refresh } = useProfessionalQueue(
     eventId,
     "medicina",
@@ -218,13 +225,26 @@ export function DoctorClient({ eventId, doctorId, initialEntries }: Props) {
     "in_progress"
   );
 
+  const historySection = doctorId ? (
+    <AppointmentHistory
+      eventId={eventId}
+      professionalId={doctorId}
+      role="medico"
+      professional={professional}
+      event={event}
+    />
+  ) : null;
+
   if (entries.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
-        <p className="text-sm font-medium text-foreground">Disponível</p>
-        <p className="text-sm text-muted-foreground">
-          Aguardando atribuição do controlador.
-        </p>
+      <div className="space-y-4">
+        <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">Disponível</p>
+          <p className="text-sm text-muted-foreground">
+            Aguardando atribuição do controlador.
+          </p>
+        </div>
+        {historySection}
       </div>
     );
   }
@@ -232,8 +252,9 @@ export function DoctorClient({ eventId, doctorId, initialEntries }: Props) {
   return (
     <div className="space-y-3">
       {entries.map((e) => (
-        <AppointmentCard key={e.id} entry={e} onSuccess={refresh} />
+        <AppointmentCard key={e.id} entry={e} professional={professional} event={event} onSuccess={refresh} />
       ))}
+      {historySection}
     </div>
   );
 }

@@ -11,8 +11,9 @@ import { PriorityBadge } from "@/components/queue/priority-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { startAttendance } from "@/lib/professional-actions";
 import { submitTriage } from "./actions";
+import { AppointmentHistory } from "@/components/ficha/appointment-history";
 import { cn } from "@/lib/utils";
-import type { QueueEntry } from "@/lib/types";
+import type { QueueEntry, ProfessionalInfo, EventInfo } from "@/lib/types";
 
 const SPECIALTY_OPTIONS = [
   { value: "clinica_geral", label: "Clínica Geral" },
@@ -45,9 +46,13 @@ function parseVitals(v: VitalsState) {
 
 function TriageCard({
   entry,
+  professional,
+  event,
   onSuccess,
 }: {
   entry: QueueEntry;
+  professional: ProfessionalInfo;
+  event: EventInfo;
   onSuccess: () => void;
 }) {
   const [started, setStarted] = useState(!!entry.started_at);
@@ -79,11 +84,12 @@ function TriageCard({
       toast.error("Selecione a especialidade antes de encaminhar ao médico.");
       return;
     }
+    const parsedVitals = parseVitals(vitals);
     startTransition(async () => {
       const r = await submitTriage({
         entryId: entry.id,
         chiefComplaint,
-        vitals: parseVitals(vitals),
+        vitals: parsedVitals,
         action,
         specialty: action === "forward" ? specialty || undefined : undefined,
       });
@@ -312,18 +318,33 @@ interface Props {
   eventId: string;
   nurseId: string | null;
   initialEntries: QueueEntry[];
+  professional: ProfessionalInfo;
+  event: EventInfo;
 }
 
-export function NursingClient({ eventId, nurseId, initialEntries }: Props) {
+export function NursingClient({ eventId, nurseId, initialEntries, professional, event }: Props) {
   const { entries, refresh } = useNursingQueue(eventId, nurseId, initialEntries);
+
+  const historySection = nurseId ? (
+    <AppointmentHistory
+      eventId={eventId}
+      professionalId={nurseId}
+      role="enfermagem"
+      professional={professional}
+      event={event}
+    />
+  ) : null;
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
-        <p className="text-sm font-medium text-foreground">Disponível</p>
-        <p className="text-sm text-muted-foreground">
-          Aguardando atribuição do controlador.
-        </p>
+      <div className="space-y-4">
+        <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">Disponível</p>
+          <p className="text-sm text-muted-foreground">
+            Aguardando atribuição do controlador.
+          </p>
+        </div>
+        {historySection}
       </div>
     );
   }
@@ -331,8 +352,9 @@ export function NursingClient({ eventId, nurseId, initialEntries }: Props) {
   return (
     <div className="space-y-3">
       {entries.map((e) => (
-        <TriageCard key={e.id} entry={e} onSuccess={refresh} />
+        <TriageCard key={e.id} entry={e} professional={professional} event={event} onSuccess={refresh} />
       ))}
+      {historySection}
     </div>
   );
 }

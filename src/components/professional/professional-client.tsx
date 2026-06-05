@@ -18,6 +18,7 @@ import { AbandonButton } from "@/components/queue/abandon-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { startAttendance, completeAppointment, forwardToSocialService } from "@/lib/professional-actions";
 import { Odontogram } from "@/components/professional/odontogram";
+import { AppointmentHistory } from "@/components/ficha/appointment-history";
 import type {
   ServiceType,
   QueueEntry,
@@ -27,6 +28,8 @@ import type {
   OdontogramData,
   ConsultoriaJuridicaData,
   ConsultoriaFinanceiraData,
+  ProfessionalInfo,
+  EventInfo,
 } from "@/lib/types";
 
 // ─── Form components ──────────────────────────────────────────────────────────
@@ -336,10 +339,14 @@ function PatientHeader({ entry }: { entry: QueueEntry }) {
 function AppointmentCard({
   entry,
   serviceType,
+  professional,
+  event,
   onSuccess,
 }: {
   entry: QueueEntry;
   serviceType: ServiceType;
+  professional: ProfessionalInfo;
+  event: EventInfo;
   onSuccess: () => void;
 }) {
   const [started, setStarted] = useState(!!entry.started_at);
@@ -474,13 +481,24 @@ interface Props {
   serviceType: ServiceType;
   professionalId: string | null;
   initialEntries: QueueEntry[];
+  professional: ProfessionalInfo;
+  event: EventInfo;
 }
+
+const HISTORY_ROLES: Partial<Record<ServiceType, import("@/lib/types").UserRole>> = {
+  odontologia: "odontologo",
+  fonoaudiologia: "fonoaudiologo",
+  psicologia: "psicologo",
+  servico_social: "assistente_social",
+};
 
 export function ProfessionalClient({
   eventId,
   serviceType,
   professionalId,
   initialEntries,
+  professional,
+  event,
 }: Props) {
   const { entries, refresh } = useProfessionalQueue(
     eventId,
@@ -489,13 +507,27 @@ export function ProfessionalClient({
     initialEntries
   );
 
+  const historyRole = HISTORY_ROLES[serviceType] ?? professional.role;
+  const historySection = professionalId ? (
+    <AppointmentHistory
+      eventId={eventId}
+      professionalId={professionalId}
+      role={historyRole}
+      professional={professional}
+      event={event}
+    />
+  ) : null;
+
   if (entries.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
-        <p className="text-sm font-medium text-foreground">Disponível</p>
-        <p className="text-sm text-muted-foreground">
-          Aguardando atribuição do controlador.
-        </p>
+      <div className="space-y-4">
+        <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">Disponível</p>
+          <p className="text-sm text-muted-foreground">
+            Aguardando atribuição do controlador.
+          </p>
+        </div>
+        {historySection}
       </div>
     );
   }
@@ -507,9 +539,12 @@ export function ProfessionalClient({
           key={e.id}
           entry={e}
           serviceType={serviceType}
+          professional={professional}
+          event={event}
           onSuccess={refresh}
         />
       ))}
+      {historySection}
     </div>
   );
 }

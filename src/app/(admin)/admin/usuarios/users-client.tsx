@@ -17,6 +17,7 @@ import { roleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { UserWithEmail } from "./actions";
 import type { UserRole, ServiceType } from "@/lib/types";
+import { REGISTRATION_LABEL } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -352,6 +353,7 @@ function EditForm({
         ? [user.medical_specialty]
         : []
   );
+  const [registrationNumber, setRegistrationNumber] = useState(user.registration_number ?? "");
   const [isPending, startTransition] = useTransition();
 
   const showServiceTypes = role === "controlador";
@@ -368,6 +370,7 @@ function EditForm({
         service_types: showServiceTypes ? serviceTypes : null,
         medical_specialty: specValue,
         medical_specialties: specArray,
+        registration_number: registrationNumber || null,
       });
       if (r.error) {
         toast.error(r.error);
@@ -381,6 +384,7 @@ function EditForm({
           service_types: showServiceTypes ? serviceTypes : null,
           medical_specialty: specValue,
           medical_specialties: specArray,
+          registration_number: registrationNumber || null,
         });
       }
     });
@@ -455,6 +459,18 @@ function EditForm({
 
       {showsControllerSpecialties(role, serviceTypes) && (
         <ControllerSpecialtyChips selected={specialties} onChange={setSpecialties} />
+      )}
+
+      {REGISTRATION_LABEL[role] && (
+        <div className="space-y-1.5 max-w-xs">
+          <Label className="text-xs">Nº de registro ({REGISTRATION_LABEL[role]})</Label>
+          <Input
+            value={registrationNumber}
+            onChange={(e) => setRegistrationNumber(e.target.value)}
+            placeholder={`ex: ${REGISTRATION_LABEL[role]}-SP 123456`}
+            className="h-9 text-sm"
+          />
+        </div>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

@@ -32,6 +32,8 @@ export default async function SocialWorkPage() {
       professionalId={professionalId}
       initialEntries={initialEntries}
       initialForwardedEntries={initialForwardedEntries}
+      professional={{ name: profile.name, role: profile.role, registration_number: profile.registration_number }}
+      event={{ name: event.name, date: event.date }}
     />
   );
 }

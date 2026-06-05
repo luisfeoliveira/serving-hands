@@ -75,6 +75,7 @@ export async function updateUser(input: {
   service_types: ServiceType[] | null;
   medical_specialty: string | null;
   medical_specialties?: string[] | null;
+  registration_number?: string | null;
 }): Promise<{ error?: string }> {
   const admin = createAdminClient();
 
@@ -87,6 +88,7 @@ export async function updateUser(input: {
       service_types: input.service_types?.length ? input.service_types : null,
       medical_specialty: input.medical_specialty || null,
       medical_specialties: input.medical_specialties?.length ? input.medical_specialties : null,
+      registration_number: input.registration_number || null,
     })
     .eq("id", input.id);
 
