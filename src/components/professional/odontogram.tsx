@@ -16,9 +16,17 @@ const SURFACE_CONFIG: Record<SurfaceState, { label: string; color: string; hover
   restauracao_satisfatoria: { label: "Rest. satisfatória",       dot: "bg-blue-400", color: "#60a5fa", hover: "#dbeafe" },
 };
 
-const SURFACE_ABBR: Record<ToothSurface, string> = {
-  V: "V", L: "L", M: "M", D: "D", O: "O",
-};
+// FDI helpers — tooth number = (quadrant × 10) + position
+function isAnterior(tooth: number) { return tooth % 10 <= 3; }
+function isUpper(tooth: number) { const q = Math.floor(tooth / 10); return q === 1 || q === 2 || q === 5 || q === 6; }
+// Right quadrants (1,4 adult · 5,8 primary): mesial faces RIGHT toward midline
+function isRightQuadrant(tooth: number) { const q = Math.floor(tooth / 10); return q === 1 || q === 4 || q === 5 || q === 8; }
+
+function surfaceLabel(tooth: number, surface: ToothSurface): string {
+  if (surface === "O") return isAnterior(tooth) ? "Incisal" : "Oclusal";
+  if (surface === "L") return isUpper(tooth) ? "P" : "L";
+  return surface; // V, M, D
+}
 
 const IDLE_FILL = "#f9fafb"; // gray-50
 
@@ -73,7 +81,7 @@ function MarkedTeethSummary({ value }: { value: OdontogramData }) {
             bySurface[state as SurfaceState]!.push(surf as ToothSurface);
           }
           for (const [state, surfs] of Object.entries(bySurface) as [SurfaceState, ToothSurface[]][]) {
-            parts.push(`${SURFACE_CONFIG[state].label}: ${surfs.map(s => SURFACE_ABBR[s]).join(", ")}`);
+            parts.push(`${SURFACE_CONFIG[state].label}: ${surfs.map(s => surfaceLabel(Number(tooth), s)).join(", ")}`);
           }
 
           return (
@@ -91,12 +99,14 @@ function MarkedTeethSummary({ value }: { value: OdontogramData }) {
 // ─── SVG tooth ────────────────────────────────────────────────────────────────
 
 function ToothSVG({
+  tooth,
   data,
   activeTool,
   selected,
   readOnly,
   onSurface,
 }: {
+  tooth: number;
   data: ToothData | undefined;
   activeTool: SurfaceState;
   selected: boolean;
@@ -136,10 +146,12 @@ function ToothSVG({
       <circle cx="15" cy="15" r="13" fill={IDLE_FILL} />
 
       {/* 4 peripheral wedges */}
-      {(["V", "M", "D", "L"] as const).map((s) => (
-        <path
+      {(["V", "M", "D", "L"] as const).map((s) => {
+        // Right-quadrant teeth: M and D positions are mirrored; key (data) unchanged
+        const pathKey = isRightQuadrant(tooth) && (s === "M" || s === "D") ? (s === "M" ? "D" : "M") : s;
+        return (<path
           key={s}
-          d={WEDGE_PATHS[s]}
+          d={WEDGE_PATHS[pathKey as Exclude<ToothSurface, "O">]}
           fill={fill(s)}
           stroke="white"
           strokeWidth="0.75"
@@ -147,8 +159,8 @@ function ToothSVG({
           onMouseEnter={() => !readOnly && setHovered(s)}
           onMouseLeave={() => setHovered(null)}
           onClick={(e) => { e.stopPropagation(); !readOnly && onSurface(s); }}
-        />
-      ))}
+        />);
+      })}
 
       {/* O – center circle */}
       <circle
@@ -195,6 +207,7 @@ function ToothCell({
     <div className={cn("flex flex-col items-center gap-px", arch === "lower" && "flex-col-reverse")}>
       {numBtn}
       <ToothSVG
+        tooth={tooth}
         data={data}
         activeTool={activeTool}
         selected={selected}
