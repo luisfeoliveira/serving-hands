@@ -10,7 +10,7 @@ import { PriorityBadge } from "@/components/queue/priority-badge";
 import { StatusBadge } from "@/components/queue/status-badge";
 import { AbandonButton } from "@/components/queue/abandon-button";
 import { startAttendance } from "@/lib/professional-actions";
-import { completeAppointment } from "./actions";
+import { completeAppointment, forwardToSpecialty } from "./actions";
 import { AppointmentHistory } from "@/components/ficha/appointment-history";
 import { cn } from "@/lib/utils";
 import type { QueueEntry, DbHealthVitals, ProfessionalInfo, EventInfo } from "@/lib/types";
@@ -66,7 +66,15 @@ function AppointmentCard({
   const [notes, setNotes] = useState("");
   const [referral, setReferral] = useState<"resolved" | "sus" | "other">("resolved");
   const [referralNotes, setReferralNotes] = useState("");
+  const [forwardSpecialty, setForwardSpecialty] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const ALL_SPECIALTIES = [
+    { value: "clinica_geral", label: "Clínica Geral" },
+    { value: "cardiologia",   label: "Cardiologia" },
+    { value: "pneumologia",   label: "Pneumologia" },
+    { value: "dermatologia",  label: "Dermatologia" },
+  ].filter((s) => s.value !== entry.medical_specialty);
 
   const patientHeader = (
     <div className="flex items-start gap-3">
@@ -126,15 +134,18 @@ function AppointmentCard({
       return;
     }
     startTransition(async () => {
-      const r = await completeAppointment({
+      const base = {
         entryId: entry.id,
         notes,
         referral,
         ...(referral === "other" && { referral_notes: referralNotes }),
-      });
+      };
+      const r = forwardSpecialty
+        ? await forwardToSpecialty({ ...base, targetSpecialty: forwardSpecialty })
+        : await completeAppointment(base);
       if (r.error) toast.error(r.error);
       else {
-        toast.success("Atendimento concluído.");
+        toast.success(forwardSpecialty ? "Encaminhado com sucesso." : "Atendimento concluído.");
         onSuccess();
       }
     });
@@ -190,15 +201,38 @@ function AppointmentCard({
           )}
         </div>
 
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Encaminhar para especialidade
+          </Label>
+          <div className="flex gap-2 flex-wrap">
+            {ALL_SPECIALTIES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setForwardSpecialty(forwardSpecialty === s.value ? null : s.value)}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-md border transition-colors",
+                  forwardSpecialty === s.value
+                    ? "bg-violet-600 text-white border-violet-600"
+                    : "border-border hover:bg-muted/40 text-foreground"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
           <AbandonButton entryId={entry.id} onAbandoned={onSuccess} />
           <Button
             size="sm"
             onClick={submit}
             disabled={isPending || !notes.trim()}
-            className="h-8 px-3 text-xs"
+            className={cn("h-8 px-3 text-xs", forwardSpecialty && "bg-violet-600 hover:bg-violet-700")}
           >
-            {isPending ? "…" : "Concluir atendimento"}
+            {isPending ? "…" : forwardSpecialty ? `Concluir e encaminhar → ${ALL_SPECIALTIES.find(s => s.value === forwardSpecialty)?.label}` : "Concluir atendimento"}
           </Button>
         </div>
       </div>
