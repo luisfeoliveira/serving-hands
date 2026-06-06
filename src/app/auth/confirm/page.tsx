@@ -17,33 +17,36 @@ export default function ConfirmPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const hash = window.location.hash.substring(1); // strip leading #
-    const params = new URLSearchParams(hash);
+    const supabase = createClient();
 
+    // Shape 1: PKCE recovery — Supabase redirects with ?code= in query params
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) router.replace("/login?error=link-expirado");
+        else router.replace("/auth/set-password");
+      });
+      return;
+    }
+
+    // Shape 2: implicit flow (invites) — tokens in URL hash
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
     const accessToken  = params.get("access_token");
     const refreshToken = params.get("refresh_token");
-    const type         = params.get("type"); // "invite" | "recovery" | "signup" | …
+    const type         = params.get("type");
 
     if (!accessToken || !refreshToken) {
       router.replace("/login?error=link-expirado");
       return;
     }
 
-    const supabase = createClient();
-
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error }) => {
-        if (error) {
-          router.replace("/login?error=link-expirado");
-          return;
-        }
-
-        if (type === "invite" || type === "recovery") {
-          router.replace("/auth/set-password");
-        } else {
-          router.replace("/login");
-        }
+        if (error) { router.replace("/login?error=link-expirado"); return; }
+        if (type === "invite" || type === "recovery") router.replace("/auth/set-password");
+        else router.replace("/login");
       });
   }, [router]);
 
