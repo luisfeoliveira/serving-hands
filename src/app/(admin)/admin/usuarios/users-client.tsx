@@ -499,7 +499,7 @@ function UserRow({
   onSaved: (updated: UserWithEmail) => void;
 }) {
   const [resendPending, startResend] = useTransition();
-  const pendingSetup = !user.active && !user.last_sign_in_at;
+  const pendingSetup = !user.last_sign_in_at;
 
   function handleResend(e: React.MouseEvent) {
     e.stopPropagation();
@@ -519,7 +519,7 @@ function UserRow({
         <span
           className={cn(
             "w-2 h-2 rounded-full shrink-0",
-            user.active ? "bg-emerald-500" : pendingSetup ? "bg-amber-400" : "bg-muted-foreground/30"
+            pendingSetup ? "bg-amber-400" : user.active ? "bg-emerald-500" : "bg-muted-foreground/30"
           )}
         />
 
