@@ -82,10 +82,19 @@ export interface DbUser {
   registration_number?: string | null; // CRM, COREN, CRO, CRFa, CRP, etc.
 }
 
+export type DocType = "cpf" | "rg" | "sus";
+
+export const DOC_TYPE_LABEL: Record<DocType, string> = {
+  cpf: "CPF",
+  rg: "RG",
+  sus: "Cartão SUS",
+};
+
 export interface DbPerson {
   id: string;
   event_id: string;
-  cpf: string;
+  doc_type: DocType;
+  doc_number: string;
   name: string;
   age: number;
   registered_at: string;
@@ -255,7 +264,7 @@ export type EventInfo = {
 
 export type FichaData = {
   event: EventInfo;
-  person: { name: string; age: number; cpf: string };
+  person: { name: string; age: number; doc_type: DocType; doc_number: string };
   professional: ProfessionalInfo;
   serviceType: ServiceType;
   completedAt?: string;
@@ -277,7 +286,7 @@ export type FichaData = {
 
 export type HistoryEntry = {
   registrationId: string;
-  person: { name: string; age: number; cpf: string };
+  person: { name: string; age: number; doc_type: DocType; doc_number: string };
   completedAt: string | null;
   serviceType: ServiceType;
   chiefComplaint?: string | null;

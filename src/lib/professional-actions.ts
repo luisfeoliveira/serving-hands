@@ -146,11 +146,11 @@ export async function getCompletedHistory(input: {
     for (const reg of regsData) {
       const v = vitalsData.find((x) => x.service_registration_id === reg.id);
       const personRaw = reg.person as unknown;
-      const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; cpf: string } | undefined) : (personRaw as { name: string; age: number; cpf: string } | null);
+      const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; doc_type: import("@/lib/types").DocType; doc_number: string } | undefined) : (personRaw as { name: string; age: number; doc_type: import("@/lib/types").DocType; doc_number: string } | null);
       if (!person) continue;
       results.push({
         registrationId: reg.id,
-        person: { name: person.name, age: person.age, cpf: person.cpf },
+        person: { name: person.name, age: person.age, doc_type: person.doc_type, doc_number: person.doc_number },
         completedAt: reg.nursing_completed_at ?? v?.recorded_at ?? null,
         serviceType: reg.service_type as import("@/lib/types").ServiceType,
         chiefComplaint: reg.chief_complaint,
@@ -181,13 +181,13 @@ export async function getCompletedHistory(input: {
   const results: HistoryEntry[] = [];
   for (const reg of data) {
     const personRaw = reg.person as unknown;
-    const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; cpf: string } | undefined) : (personRaw as { name: string; age: number; cpf: string } | null);
+    const person = Array.isArray(personRaw) ? (personRaw[0] as { name: string; age: number; doc_type: import("@/lib/types").DocType; doc_number: string } | undefined) : (personRaw as { name: string; age: number; doc_type: import("@/lib/types").DocType; doc_number: string } | null);
     if (!person) continue;
     const appts = reg.appointments as Array<{ data: AppointmentData }> | null;
     const vitalsArr = reg.health_vitals as Array<{ bp_systolic: number | null; bp_diastolic: number | null; blood_glucose: number | null; weight: number | null; temperature: number | null }> | null;
     results.push({
       registrationId: reg.id,
-      person: { name: person.name, age: person.age, cpf: person.cpf },
+      person: { name: person.name, age: person.age, doc_type: person.doc_type, doc_number: person.doc_number },
       completedAt: reg.completed_at,
       serviceType: reg.service_type as import("@/lib/types").ServiceType,
       chiefComplaint: reg.chief_complaint,

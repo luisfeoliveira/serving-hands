@@ -19,12 +19,12 @@ export interface EvangelismRecord {
 export async function searchEventPeople(
   eventId: string,
   query: string
-): Promise<{ id: string; name: string; cpf: string }[]> {
+): Promise<{ id: string; name: string; doc_type: string; doc_number: string }[]> {
   if (!query.trim()) return [];
   const admin = createAdminClient();
   const { data } = await admin
     .from("people")
-    .select("id, name, cpf")
+    .select("id, name, doc_type, doc_number")
     .eq("event_id", eventId)
     .ilike("name", `%${query}%`)
     .limit(10);

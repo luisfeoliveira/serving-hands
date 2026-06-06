@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { lookupPerson, registerPerson, addServices } from "./actions";
-import { SERVICE_LABELS } from "@/lib/types";
-import type { ServiceType, DbPerson } from "@/lib/types";
+import { SERVICE_LABELS, DOC_TYPE_LABEL } from "@/lib/types";
+import type { ServiceType, DbPerson, DocType } from "@/lib/types";
 
 // Services shown at reception (all except bazar goes through its own controller)
 const RECEPTION_SERVICES: ServiceType[] = [
@@ -40,15 +40,12 @@ function formatCPF(value: string): string {
 function isValidCPF(value: string): boolean {
   const d = value.replace(/\D/g, "");
   if (d.length !== 11) return false;
-  // All same digits (e.g. 111.111.111-11)
   if (/^(\d)\1{10}$/.test(d)) return false;
-  // First check digit
   let sum = 0;
   for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
   let check = (sum * 10) % 11;
   if (check === 10 || check === 11) check = 0;
   if (check !== parseInt(d[9])) return false;
-  // Second check digit
   sum = 0;
   for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
   check = (sum * 10) % 11;
@@ -56,6 +53,32 @@ function isValidCPF(value: string): boolean {
   if (check !== parseInt(d[10])) return false;
   return true;
 }
+
+function validateDoc(docType: DocType, value: string): string | null {
+  if (docType === "cpf") {
+    if (!isValidCPF(value)) return "CPF inválido.";
+  } else if (docType === "sus") {
+    if (value.replace(/\D/g, "").length !== 15) return "Cartão SUS deve ter 15 dígitos.";
+  } else {
+    // RG: flexible — at least 5 chars after stripping separators
+    if (value.replace(/[\s.\-\/]/g, "").length < 5) return "RG inválido.";
+  }
+  return null;
+}
+
+function formatDoc(docType: DocType, value: string): string {
+  if (docType === "cpf") return formatCPF(value);
+  if (docType === "sus") return value.replace(/\D/g, "").slice(0, 15);
+  return value; // RG: free-form
+}
+
+function docPlaceholder(docType: DocType): string {
+  if (docType === "cpf") return "000.000.000-00";
+  if (docType === "sus") return "000000000000000";
+  return "Ex: 12.345.678-9";
+}
+
+const DOC_TYPES: DocType[] = ["cpf", "rg", "sus"];
 
 type Mode = "idle" | "new" | "existing";
 
@@ -97,8 +120,9 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
     };
   }, [eventId]);
 
-  // CPF step
-  const [cpf, setCpf] = useState("");
+  // Document step
+  const [docType, setDocType] = useState<DocType>("cpf");
+  const [docNumber, setDocNumber] = useState("");
   const [mode, setMode] = useState<Mode>("idle");
 
   // Found person state
@@ -112,13 +136,11 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
   const [priority, setPriority] = useState(false);
 
   function handleSearch() {
-    if (!isValidCPF(cpf)) {
-      toast.error("CPF inválido. Verifique os números e tente novamente.");
-      return;
-    }
+    const err = validateDoc(docType, docNumber);
+    if (err) { toast.error(err); return; }
 
     startTransition(async () => {
-      const result = await lookupPerson(cpf);
+      const result = await lookupPerson(docType, docNumber);
 
       if ("error" in result) {
         toast.error(result.error);
@@ -160,7 +182,8 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
           return;
         }
         result = await registerPerson({
-          cpf,
+          docType,
+          docNumber,
           name,
           age: ageNum,
           services: selectedServices,
@@ -189,7 +212,7 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
   }
 
   function reset() {
-    setCpf("");
+    setDocNumber("");
     setMode("idle");
     setFoundPerson(null);
     setRegisteredServices([]);
@@ -201,19 +224,35 @@ export function ReceptionClient({ eventId, initialQueueSizes, serviceLimits }: P
 
   return (
     <div className="space-y-6">
-      {/* CPF Search */}
+      {/* Document Search */}
       <div className="space-y-2">
-        <Label htmlFor="cpf">CPF do participante</Label>
+        <Label>Documento do participante</Label>
         <div className="flex gap-2">
+          {/* Doc type selector */}
+          <div className="flex rounded-lg border border-input overflow-hidden shrink-0">
+            {DOC_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { setDocType(t); setDocNumber(""); if (mode !== "idle") reset(); }}
+                className={`px-3 h-11 text-sm font-medium transition-colors ${
+                  docType === t
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                {DOC_TYPE_LABEL[t]}
+              </button>
+            ))}
+          </div>
           <Input
-            id="cpf"
-            value={cpf}
+            value={docNumber}
             onChange={(e) => {
-              setCpf(formatCPF(e.target.value));
+              setDocNumber(formatDoc(docType, e.target.value));
               if (mode !== "idle") reset();
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="000.000.000-00"
+            placeholder={docPlaceholder(docType)}
             inputMode="numeric"
             className="h-11 font-mono"
           />

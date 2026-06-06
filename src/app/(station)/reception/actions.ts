@@ -2,11 +2,11 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { ServiceType, DbPerson } from "@/lib/types";
+import type { ServiceType, DbPerson, DocType } from "@/lib/types";
 
-// ─── Lookup person by CPF ─────────────────────────────────────────────────────
+// ─── Lookup person by document ────────────────────────────────────────────────
 
-export async function lookupPerson(cpf: string): Promise<
+export async function lookupPerson(docType: DocType, docNumber: string): Promise<
   | { error: string }
   | {
       person: DbPerson | null;
@@ -15,8 +15,8 @@ export async function lookupPerson(cpf: string): Promise<
       eventId: string;
     }
 > {
-  const clean = cpf.replace(/\D/g, "");
-  if (clean.length !== 11) return { error: "CPF deve ter 11 dígitos." };
+  const clean = cleanDoc(docType, docNumber);
+  if (!clean) return { error: "Documento inválido." };
 
   const admin = createAdminClient();
 
@@ -33,7 +33,8 @@ export async function lookupPerson(cpf: string): Promise<
     .from("people")
     .select("*")
     .eq("event_id", event.id)
-    .eq("cpf", clean)
+    .eq("doc_type", docType)
+    .eq("doc_number", clean)
     .single();
 
   if (currentPerson) {
@@ -55,7 +56,8 @@ export async function lookupPerson(cpf: string): Promise<
   const { data: previousPerson } = await admin
     .from("people")
     .select("*")
-    .eq("cpf", clean)
+    .eq("doc_type", docType)
+    .eq("doc_number", clean)
     .order("registered_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -66,6 +68,13 @@ export async function lookupPerson(cpf: string): Promise<
     registeredServices: [],
     eventId: event.id,
   };
+}
+
+// Strip formatting for storage
+function cleanDoc(docType: DocType, value: string): string {
+  if (docType === "cpf" || docType === "sus") return value.replace(/\D/g, "");
+  // RG: remove separators but keep letters (some states use letters)
+  return value.replace(/[\s.\-\/]/g, "").toUpperCase();
 }
 
 // ─── Get queue sizes (active entries per service) ─────────────────────────────
@@ -115,7 +124,8 @@ async function nextPosition(
 // ─── Register new person + services ──────────────────────────────────────────
 
 export async function registerPerson(input: {
-  cpf: string;
+  docType: DocType;
+  docNumber: string;
   name: string;
   age: number;
   services: ServiceType[];
@@ -129,18 +139,20 @@ export async function registerPerson(input: {
   if (!user) return { error: "Sessão expirada." };
 
   const admin = createAdminClient();
+  const clean = cleanDoc(input.docType, input.docNumber);
 
   const { data: person, error: personErr } = await admin
     .from("people")
     .upsert(
       {
         event_id: input.eventId,
-        cpf: input.cpf.replace(/\D/g, ""),
+        doc_type: input.docType,
+        doc_number: clean,
         name: input.name.trim(),
         age: input.age,
         registered_by: user.id,
       },
-      { onConflict: "event_id,cpf" }
+      { onConflict: "event_id,doc_type,doc_number" }
     )
     .select()
     .single();

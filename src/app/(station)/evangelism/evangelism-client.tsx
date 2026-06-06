@@ -78,7 +78,7 @@ export function EvangelismClient({ eventId, initialRecords }: Props) {
 
   // Registered person flow
   const [query, setQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; name: string; cpf: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<{ id: string; name: string; doc_type: string; doc_number: string }[]>([]);
   const [selectedPerson, setSelectedPerson] = useState<{ id: string; name: string } | null>(null);
   const [registeredChecks, setRegisteredChecks] = useState<Checks>(EMPTY_CHECKS);
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
@@ -244,8 +244,8 @@ export function EvangelismClient({ eventId, initialRecords }: Props) {
                     className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted/50 transition-colors border-b border-border last:border-0"
                   >
                     <span className="font-medium">{p.name}</span>
-                    {p.cpf && (
-                      <span className="ml-2 text-xs text-muted-foreground">{p.cpf}</span>
+                    {p.doc_number && (
+                      <span className="ml-2 text-xs text-muted-foreground">{p.doc_type.toUpperCase()} {p.doc_number}</span>
                     )}
                   </button>
                 ))}

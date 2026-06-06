@@ -288,8 +288,8 @@ export function FichaDocument({ data }: { data: FichaData }) {
             <Text style={S.value}>{data.person.age} anos</Text>
           </View>
           <View style={S.row}>
-            <Text style={S.label}>CPF</Text>
-            <Text style={S.value}>{formatCPF(data.person.cpf)}</Text>
+            <Text style={S.label}>{data.person.doc_type.toUpperCase()}</Text>
+            <Text style={S.value}>{data.person.doc_number}</Text>
           </View>
         </View>
 
