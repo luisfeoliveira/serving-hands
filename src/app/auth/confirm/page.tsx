@@ -45,7 +45,7 @@ export default function ConfirmPage() {
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error }) => {
         if (error) { router.replace("/login?error=link-expirado"); return; }
-        if (type === "invite" || type === "recovery") router.replace("/auth/set-password");
+        if (type === "invite" || type === "recovery" || type === "magiclink") router.replace("/auth/set-password");
         else router.replace("/login");
       });
   }, [router]);

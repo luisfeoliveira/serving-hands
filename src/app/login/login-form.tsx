@@ -25,11 +25,15 @@ export function LoginForm() {
     setResetError(null);
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin).replace(/\/$/, "");
     startReset(async () => {
-      // PKCE flow (default): browser client generates code_verifier → stores in
-      // localStorage. /auth/confirm exchanges the code client-side using that verifier.
+      // signInWithOtp sends a magic link (OTP, not PKCE) — works on any device.
+      // /auth/confirm handles the #access_token hash and redirects to set-password.
       const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/auth/confirm`,
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${siteUrl}/auth/confirm`,
+        },
       });
       if (error) setResetError("Não foi possível enviar. Tente novamente.");
       else setResetSent(true);
