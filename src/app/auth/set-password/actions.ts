@@ -26,7 +26,7 @@ export async function setPassword(
   const { data, error } = await supabase.auth.updateUser({ password });
 
   if (error || !data.user)
-    return { error: error?.message ?? "updateUser returned no user" };
+    return { error: "Não foi possível definir a senha. Tente novamente." };
 
   const admin = createAdminClient();
 

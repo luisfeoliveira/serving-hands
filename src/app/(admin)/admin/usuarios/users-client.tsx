@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listUsers, updateUser, inviteUser } from "./actions";
+import { listUsers, updateUser, inviteUser, resendInvite } from "./actions";
 import { roleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { UserWithEmail } from "./actions";
@@ -498,6 +498,18 @@ function UserRow({
   onToggle: () => void;
   onSaved: (updated: UserWithEmail) => void;
 }) {
+  const [resendPending, startResend] = useTransition();
+  const pendingSetup = !user.active && !user.last_sign_in_at;
+
+  function handleResend(e: React.MouseEvent) {
+    e.stopPropagation();
+    startResend(async () => {
+      const r = await resendInvite(user.email);
+      if (r.error) toast.error(r.error);
+      else toast.success(`Convite reenviado para ${user.email}.`);
+    });
+  }
+
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
       <div
@@ -507,7 +519,7 @@ function UserRow({
         <span
           className={cn(
             "w-2 h-2 rounded-full shrink-0",
-            user.active ? "bg-emerald-500" : "bg-muted-foreground/30"
+            user.active ? "bg-emerald-500" : pendingSetup ? "bg-amber-400" : "bg-muted-foreground/30"
           )}
         />
 
@@ -527,6 +539,16 @@ function UserRow({
           </span>
         </div>
 
+        {pendingSetup && (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendPending}
+            className="shrink-0 text-xs text-amber-600 dark:text-amber-400 border border-amber-400/40 rounded px-2 py-0.5 hover:bg-amber-400/10 transition-colors"
+          >
+            {resendPending ? "…" : "Reenviar convite"}
+          </button>
+        )}
         <span className="text-xs text-muted-foreground shrink-0">{expanded ? "▲" : "▼"}</span>
       </div>
 

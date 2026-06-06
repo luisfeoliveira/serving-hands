@@ -46,6 +46,7 @@ const { data, error: authError } = await admin.auth.admin.inviteUserByEmail(
 
 export interface UserWithEmail extends DbUser {
   email: string;
+  last_sign_in_at: string | null;
 }
 
 export async function listUsers(): Promise<UserWithEmail[]> {
@@ -56,15 +57,31 @@ export async function listUsers(): Promise<UserWithEmail[]> {
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 
-  const emailMap: Record<string, string> = {};
+  const authMap: Record<string, { email: string; last_sign_in_at: string | null }> = {};
   for (const u of authData?.users ?? []) {
-    emailMap[u.id] = u.email ?? "";
+    authMap[u.id] = {
+      email: u.email ?? "",
+      last_sign_in_at: u.last_sign_in_at ?? null,
+    };
   }
 
   return (profiles ?? []).map((p) => ({
     ...(p as DbUser),
-    email: emailMap[p.id] ?? "",
+    email: authMap[p.id]?.email ?? "",
+    last_sign_in_at: authMap[p.id]?.last_sign_in_at ?? null,
   }));
+}
+
+export async function resendInvite(email: string): Promise<{ error?: string }> {
+  const admin = createAdminClient();
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm`,
+  });
+
+  if (error) return { error: error.message };
+  return {};
 }
 
 export async function updateUser(input: {
