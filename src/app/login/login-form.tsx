@@ -3,7 +3,6 @@
 import { useActionState, useState, useTransition } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { signIn } from "./actions";
-import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -25,9 +24,16 @@ export function LoginForm() {
     setResetError(null);
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin).replace(/\/$/, "");
     startReset(async () => {
-      const supabase = createClient();
+      // Use implicit flow so Supabase sends tokens in the URL hash — no PKCE
+      // verifier needed. /auth/confirm already handles this shape.
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: "implicit" } }
+      );
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/confirm`,
       });
       if (error) setResetError("Não foi possível enviar. Tente novamente.");
       else setResetSent(true);
