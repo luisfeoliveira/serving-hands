@@ -49,12 +49,6 @@ export function StationMobileMenu({
         </div>
 
         <div className="p-2 space-y-1">
-          {showFinishDay && (
-            <div onClick={() => setOpen(false)}>
-              <FinishDayButton eventId={eventId} />
-            </div>
-          )}
-
           <form action={signOut}>
             <button
               type="submit"
@@ -72,7 +66,7 @@ export function StationMobileMenu({
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors sm:hidden"
+        className="flex items-center justify-center h-8 w-8 rounded-md text-primary-foreground hover:bg-primary-foreground/20 transition-colors sm:hidden"
         aria-label={open ? "Fechar menu" : "Abrir menu"}
       >
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}

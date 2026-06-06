@@ -60,11 +60,7 @@ export default async function StationLayout({
                   signOut={signOut}
                 />
                 {/* Volunteers desktop: inline controls */}
-                {event && (
-                  <div className="hidden sm:block">
-                    <FinishDayButton eventId={event.id} />
-                  </div>
-                )}
+                {event && <FinishDayButton eventId={event.id} />}
                 <span className="text-sm text-primary-foreground/70 hidden sm:block">
                   {profile.name}
                 </span>
