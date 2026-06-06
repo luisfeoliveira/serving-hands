@@ -145,21 +145,14 @@ export async function GET(request: Request) {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            paddingLeft: 80,
-            paddingRight: 80,
+            width: W - 160,
             marginTop: 60,
           }}
         >
-          <span style={{ fontSize: 35, color: NAVY, lineHeight: 1.5, textAlign: "center" }}>
-            {isProfessional && specialty ? (
-              <>
-                {"Você vestiu a camisa, colocou o seu talento em "}
-                <span style={{ fontWeight: 700, fontFamily: "Inter, sans-serif" }}>{specialty}</span>
-                {" para jogo e fez o dia dessa comunidade muito mais feliz e saudável."}
-              </>
-            ) : (
-              genericBodyText
-            )}
+          <span style={{ fontSize: 35, color: NAVY, lineHeight: 1.5, textAlign: "center", width: "100%" }}>
+            {isProfessional && specialty
+              ? `Você vestiu a camisa, colocou o seu talento em ${specialty} para jogo e fez o dia dessa comunidade muito mais feliz e saudável.`
+              : genericBodyText}
           </span>
         </div>
 
