@@ -67,7 +67,7 @@ export default async function ControllerPage() {
             getControllerEntries(event.id, st, config.secondPhase.waitingStatus, specialty).then((e) => [key, e])
           );
           professionalTasks.push(
-            getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus).then((s) => [key, s])
+            getProfessionalStatuses(event.id, config.secondPhase.role, config.secondPhase.busyStatus, specialty).then((s) => [key, s])
           );
         }
       } else if (config.secondPhase && controllerSpecialties.length === 0) {

@@ -405,7 +405,7 @@ function AssignmentSection({
           busyStatus: config.busyStatus,
         });
         if (patientSpecialtyFilter) params.set("specialtyFilter", patientSpecialtyFilter);
-        const profSpec = BEAUTY_PROFESSIONAL_SPECIALTY[serviceType];
+        const profSpec = BEAUTY_PROFESSIONAL_SPECIALTY[serviceType] ?? patientSpecialtyFilter;
         if (profSpec) params.set("professionalSpecialty", profSpec);
         const res = await fetch(`/api/queue/controller?${params}`);
         if (!res.ok) return;
