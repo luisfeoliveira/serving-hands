@@ -28,6 +28,7 @@ export interface ExpenseStat {
 export interface ReportsData {
   totalPeople: number;
   peoplePerService: ServiceStat[];
+  totalAttendances: number;
   avgServicesPerPerson: number;
   avgWaitMinutes: ServiceStat[];
   peakByHour: HourStat[];
@@ -234,6 +235,7 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
 
   return {
     totalPeople,
+    totalAttendances: completedRegs.length,
     peoplePerService,
     avgServicesPerPerson,
     avgWaitMinutes,

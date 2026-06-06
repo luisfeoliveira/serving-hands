@@ -168,10 +168,8 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
           <p className="text-4xl font-bold tabular-nums">{data.facilitadoresCount}</p>
         </Card>
 
-        <Card title="Média de serviços / pessoa">
-          <p className="text-4xl font-bold tabular-nums">
-            {data.avgServicesPerPerson.toFixed(1)}
-          </p>
+        <Card title="Total de atendimentos">
+          <p className="text-4xl font-bold tabular-nums">{data.totalAttendances}</p>
         </Card>
 
         <Card title="Cestas básicas distribuídas">
