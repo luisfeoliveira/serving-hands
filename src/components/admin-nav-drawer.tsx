@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, Users, BarChart2, Settings, ChevronRight, UsersRound, Receipt } from "lucide-react";
+import { Menu, X, LayoutGrid, Users, BarChart2, Settings, ChevronRight, UsersRound, Receipt, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATIONS = [
@@ -29,6 +29,7 @@ const ADMIN_LINKS = [
   { path: "/admin/usuarios",       label: "Usuários",       Icon: Users },
   { path: "/admin/collaborators",  label: "Facilitadores",  Icon: UsersRound },
   { path: "/admin/expenses",       label: "Gastos",         Icon: Receipt },
+  { path: "/admin/atendimentos",    label: "Atendimentos",   Icon: ClipboardList },
   { path: "/admin/relatorios",     label: "Relatórios",     Icon: BarChart2 },
   { path: "/admin/configuracoes",  label: "Configurações",  Icon: Settings },
 ] as const;

@@ -136,7 +136,7 @@ export async function getCompletedHistory(input: {
     const regIds = vitalsData.map((v) => v.service_registration_id);
     const { data: regsData } = await admin
       .from("service_registrations")
-      .select("id, nursing_completed_at, service_type, chief_complaint, person:people(name, age, cpf)")
+      .select("id, nursing_completed_at, service_type, chief_complaint, person:people(name, age, doc_type, doc_number)")
       .in("id", regIds)
       .eq("event_id", input.eventId);
 
@@ -169,7 +169,7 @@ export async function getCompletedHistory(input: {
   // Clinical professionals: query by completed_by
   const { data } = await admin
     .from("service_registrations")
-    .select("id, completed_at, service_type, chief_complaint, person:people(name, age, cpf), appointments(data), health_vitals(bp_systolic, bp_diastolic, blood_glucose, weight, temperature)")
+    .select("id, completed_at, service_type, chief_complaint, person:people(name, age, doc_type, doc_number), appointments(data), health_vitals(bp_systolic, bp_diastolic, blood_glucose, weight, temperature)")
     .eq("event_id", input.eventId)
     .eq("completed_by", input.professionalId)
     .eq("status", "completed")
