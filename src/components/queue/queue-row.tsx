@@ -4,6 +4,13 @@ import { cn } from "@/lib/utils";
 import { SERVICE_LABELS } from "@/lib/types";
 import type { QueueEntry } from "@/lib/types";
 
+function fmtTime(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+  });
+}
+
 // Left border color communicates status at a glance
 const STATUS_BORDER: Record<string, string> = {
   waiting:            "border-l-border",
@@ -66,6 +73,13 @@ export function QueueRow({ entry, actions, waitLabel }: QueueRowProps) {
             <p className="text-xs text-amber-700 font-medium">
               Em atendimento:{" "}
               {entry.active_services.map((s) => SERVICE_LABELS[s]).join(" · ")}
+            </p>
+          )}
+          {(entry.started_at || entry.completed_at) && (
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {entry.started_at && `Iniciado ${fmtTime(entry.started_at)}`}
+              {entry.started_at && entry.completed_at && " · "}
+              {entry.completed_at && `Concluído ${fmtTime(entry.completed_at)}`}
             </p>
           )}
         </div>
