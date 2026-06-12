@@ -15,7 +15,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-10 bg-primary border-b border-primary/20">
+      <header className="sticky top-0 z-10 bg-primary border-b border-primary/20 print:hidden">
         {/* Top bar: title + user controls */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div>
