@@ -38,7 +38,9 @@ export interface ReportsData {
   ageDistribution: AgeStat[];
   avgAge: number | null;
   cestaBasicaCount: number;
+  volunteersCount: number;
   facilitadoresCount: number;
+  totalTeam: number;
   expenses: ExpenseStat[];
   totalExpenses: number;
   evangelismo: {
@@ -69,6 +71,7 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     { data: bazaarTx },
     { count: cestaBasicaCount },
     { count: facilitadoresCount },
+    { count: volunteersCount },
     { data: expenseRows },
     { data: evangelismoRows },
   ] = await Promise.all([
@@ -90,6 +93,9 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
       .from("collaborators")
       .select("*", { count: "exact", head: true })
       .eq("event_id", eventId),
+    admin
+      .from("users")
+      .select("*", { count: "exact", head: true }),
     admin
       .from("event_expenses")
       .select("category, unit_value, quantity")
@@ -246,7 +252,9 @@ export async function getReportsData(eventId: string): Promise<ReportsData> {
     ageDistribution,
     avgAge,
     cestaBasicaCount: cestaBasicaCount ?? 0,
+    volunteersCount: volunteersCount ?? 0,
     facilitadoresCount: facilitadoresCount ?? 0,
+    totalTeam: (volunteersCount ?? 0) + (facilitadoresCount ?? 0),
     expenses,
     totalExpenses,
     evangelismo,

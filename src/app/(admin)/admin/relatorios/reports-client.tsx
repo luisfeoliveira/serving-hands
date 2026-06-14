@@ -294,16 +294,29 @@ export function ReportsClient({ eventId, eventName, initialData }: Props) {
             <p className="text-4xl font-bold tabular-nums">{data.totalPeople}</p>
           </Card>
 
-          <Card title="Facilitadores">
-            <p className="text-4xl font-bold tabular-nums">{data.facilitadoresCount}</p>
-          </Card>
-
           <Card title="Total de atendimentos">
             <p className="text-4xl font-bold tabular-nums">{data.totalAttendances}</p>
           </Card>
 
           <Card title="Cestas básicas distribuídas">
             <p className="text-4xl font-bold tabular-nums">{data.cestaBasicaCount}</p>
+          </Card>
+
+          <Card title="Voluntários">
+            <p className="text-4xl font-bold tabular-nums">{data.volunteersCount}</p>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <Card title="Facilitadores">
+            <p className="text-4xl font-bold tabular-nums">{data.facilitadoresCount}</p>
+          </Card>
+
+          <Card title="Total da equipe">
+            <p className="text-4xl font-bold tabular-nums">{data.totalTeam}</p>
+            <p className="text-xs text-muted-foreground">
+              {data.volunteersCount} voluntários · {data.facilitadoresCount} facilitadores
+            </p>
           </Card>
         </div>
       </Section>
